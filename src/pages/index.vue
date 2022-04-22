@@ -10,7 +10,12 @@
             <!-- Content here -->
             <div class="designer-pane mt-2 flex-grow-1 flex flex-row" @drop="onDrop">
               <K3DesignerCompBar class="comp-bar flex-none" />
-              <VueFlow class="designer" @dragover="onDragOver" @pane-ready="onLoad" @click="onClick" />
+              <VueFlow class="designer" @dragover="onDragOver" @pane-ready="onLoad" @click="onClick" :snapToGrid="true">
+                <K3DesignerSaveControls />
+                <Background />
+                <MiniMap />
+                <Controls />
+              </VueFlow>
             </div>
             <div class="property-pane mt-2 flex-none">
               <K3DesignerProperty :schema="schema" :data="data" />
@@ -28,7 +33,8 @@
 </template>
 
 <script setup lang="ts">
-import { VueFlow, Node, FlowInstance, useVueFlow } from "~/packages/designer";
+import { VueFlow, MiniMap, Controls, Background, Node, FlowInstance, useVueFlow } from "~/packages/designer";
+import { InputNodeTypes, DefaultNodeTypes, OutputNodeTypes } from "~/models/designer";
 /**
  * 여기서는 해당 화면 생성 이전에 처리할 설정을 구성합니다.
  * this 등의 사용이 불가능합니다.
@@ -50,11 +56,13 @@ const { instance, onConnect, addEdges, addNodes, getSelectedNodes, getSelectedEl
       type: "input",
       label: "input node",
       position: { x: 250, y: 5 },
+      metadata: { name: "input_schema" },
     },
   ],
 });
+
 const schema = ref({
-  labelWidth: "130px",
+  labelWidth: "120px",
   rows: [
     {
       type: "text",
@@ -211,12 +219,13 @@ const schema = ref({
     },
   ],
 });
-const data = ref({
+const data = ref();
+data.value = {
   name: "Test component",
   description: "lorem ipsum",
   password: "Secret!",
   enabled: true,
-  date: "12/03/2020",
+  date: "2020-12-03",
   number: 42,
   select: "A",
   sampleArray: [
@@ -253,13 +262,29 @@ const data = ref({
       ],
     },
   ],
-});
+};
 // Compputed
 // Watcher
 // Methods
+
 const onClick = () => {
   if (getSelectedNodes.value.length > 0) {
     console.log(`selected nodes: ${JSON.stringify(getSelectedNodes.value[0])}`);
+    const node = getSelectedNodes.value[0];
+    switch (node.type) {
+      case "input":
+        schema.value.rows = InputNodeTypes;
+        break;
+      case "default":
+        schema.value.rows = DefaultNodeTypes;
+        break;
+      case "output":
+        schema.value.rows = OutputNodeTypes;
+        break;
+    }
+    data.value = node.metadata;
+    data.value["enabled"] = true;
+    data.value["id"] = node.id;
   }
   if (getSelectedEdges.value.length > 0) {
     console.log(`selected edges: ${JSON.stringify(getSelectedEdges.value[0])}`);
@@ -277,16 +302,17 @@ const onDragOver = (event: DragEvent) => {
     event.dataTransfer.dropEffect = "move";
   }
 };
+// Add new node on drag-stop event.
 const onDrop = (event: DragEvent) => {
   if (instance.value) {
     const type = event.dataTransfer?.getData("application/vueflow");
-    console.log(`position: ${event.clientX},${event.clientY}`);
     const position = instance.value.project({ x: event.clientX - 500, y: event.clientY - 200 });
     const newNode = {
       id: getId(),
       type,
       position,
       label: `${type} node`,
+      metadata: { name: "test-node" },
     } as Node;
     addNodes([newNode]);
   }

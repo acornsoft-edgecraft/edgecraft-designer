@@ -1,4 +1,4 @@
-import { XYPosition, Position, SnapGrid, Element, XYZPosition, Dimensions, ElementData } from './flow'
+import { XYPosition, Position, SnapGrid, Element, XYZPosition, Dimensions, ElementData, Metadata } from './flow'
 import { DefaultNodeTypes } from './components'
 import { HandleElement, ValidConnectionFunc } from './handle'
 
@@ -65,11 +65,11 @@ export interface NodeProps<Data = ElementData> {
   /** node dimensions (width, height) */
   dimensions: Dimensions
   label?:
-    | string
-    | {
-        props?: any
-        component: any
-      }
+  | string
+  | {
+    props?: any
+    component: any
+  }
   /** called when used as target for new connection */
   isValidTargetPos?: ValidConnectionFunc
   /** called when used as source for new connection */
@@ -79,5 +79,6 @@ export interface NodeProps<Data = ElementData> {
   zIndex: number
   targetPosition?: Position
   sourcePosition?: Position
-  dragHandle?: string
+  dragHandle?: string,
+  metadata: Metadata
 }

@@ -130,7 +130,6 @@ watch(
 const type = computed(() => {
   const instance = getCurrentInstance(); // 현재 컴포넌트 인스턴스
   let nodeType = store.getNodeTypes[name.value];
-  console.info(`nodeType: ${nodeType}`);
   if (typeof nodeType === "string") {
     if (instance) {
       const components = Object.keys(instance.appContext.components);
@@ -206,6 +205,7 @@ export default {
         :target-position="node.targetPosition"
         :source-position="node.sourcePosition"
         :label="node.label"
+        :metadata="node.metadata"
         :drag-handle="node.dragHandle" />
     </div>
   </DraggableCore>

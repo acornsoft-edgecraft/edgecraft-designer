@@ -1,9 +1,9 @@
-interface SchemaType {
+export interface SchemaType {
     rows: ReadonlyArray<RowType>;
     labelWidth: string;
 }
 
-interface RowType {
+export interface RowType {
     type: 'text' | 'password' | 'checkbox' | 'boolean' | 'textarea' | 'textbox' | 'select' | 'radio' | 'nested' | 'date' | 'number';
     readonly?: boolean;
     field: string
@@ -14,5 +14,3 @@ interface RowType {
     columns?: Array<RowType>
     criteria: Array<any>
 }
-
-export { SchemaType, RowType }

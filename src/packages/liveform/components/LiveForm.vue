@@ -12,14 +12,10 @@
 </template>
 
 <script setup lang="ts">
-//import { PropType } from 'vue';
-//   import { ref } from '@vue/reactivity';
-//   import { defineProps, onMounted, defineEmits } from '@vue/runtime-core';
-//import { PropType } from "@vue/runtime-core";
-import getComponent from "./componentMap";
-//import type { RowType, SchemaType } from "../types/types";
-import evaluateConditionalDisplay from "../helpers/evaluateConditionalDisplay";
 import { PropType } from "vue";
+import getComponent from "./componentMap";
+import evaluateConditionalDisplay from "../helpers/evaluateConditionalDisplay";
+import { SchemaType } from "~/packages/liveform/types/types";
 
 let isMounted = ref(false);
 
@@ -28,29 +24,29 @@ let emitChange = () => {
   emit("change");
 };
 
-// const props = defineProps({
-//   schema: {
-//     //type: Object as PropType<SchemaType>,
-//     type: Object,
-//     required: false,
-//     default: {},
-//   },
-//   modelValue: {
-//     type: Object,
-//     required: true,
-//     default: {},
-//   },
-// });
+const props = defineProps({
+  schema: {
+    type: Object as PropType<SchemaType>,
+    required: false,
+    default: {},
+  },
+  modelValue: {
+    type: Object,
+    required: true,
+    default: {},
+  },
+});
 
-interface LiveFormProp {
-  schema: any;
-  modelValue: any;
-}
+// interface LiveFormProp {
+//   schema: any;
+//   modelValue: any;
+// }
 
-const props = withDefaults(defineProps<LiveFormProp>(), {});
+// const props = withDefaults(defineProps<LiveFormProp>(), {});
 
 onMounted(() => {
   isMounted.value = true;
+  console.log(`liveform: ${JSON.stringify(props)}`);
 });
 </script>
 
