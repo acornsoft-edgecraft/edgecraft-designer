@@ -53,10 +53,11 @@
 
 .vue-flow__node-default,
 .vue-flow__node-input,
-.vue-flow__node-output {
-  padding: 10px;
+.vue-flow__node-output,
+.vue-flow__node-group {
+  //padding: 10px;
   border-radius: 3px;
-  width: 150px;
+  //width: 150px;
   font-size: 12px;
   color: var(--vf-node-text);
   text-align: center;
@@ -78,7 +79,8 @@
 
 .vue-flow__node-default.selectable,
 .vue-flow__node-input.selectable,
-.vue-flow__node-output.selectable {
+.vue-flow__node-output.selectable,
+.vue-flow__node-group.selectable {
   &:hover {
     box-shadow: 0 1px 4px 1px rgba(0, 0, 0, 0.08);
   }
@@ -104,6 +106,13 @@
 
 .vue-flow__node-output {
   --vf-node-color: #ff0072;
+  --vf-handle: var(--vf-node-color);
+  --vf-box-shadow: var(--vf-node-color);
+}
+
+.vue-flow__node-group {
+  background: lightgreen;
+  --vf-node-color: green;
   --vf-handle: var(--vf-node-color);
   --vf-box-shadow: var(--vf-node-color);
 }

@@ -4,6 +4,7 @@
     <div class="vue-flow__node-input" :draggable="true" @dragstart="(event: DragEvent) => onDragStart(event, 'input')">Input Node</div>
     <div class="vue-flow__node-default" :draggable="true" @dragstart="(event: DragEvent) => onDragStart(event, 'default')">Default Node</div>
     <div class="vue-flow__node-output" :draggable="true" @dragstart="(event: DragEvent) => onDragStart(event, 'output')">Output Node</div>
+    <div class="vue-flow__node-group" :draggable="true" @dragstart="(event: DragEvent) => onDragStart(event, 'group')">Group Block</div>
   </aside>
 </template>
 

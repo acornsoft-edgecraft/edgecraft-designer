@@ -91,12 +91,15 @@ const createGraphNodes = (nodes: Node[], getNode: Getters['getNode'], currGraphN
       ...getNode(node.id),
       parentNode: node.parentNode,
     })
+
     if (node.parentNode) {
       parentNodes[node.parentNode] = true
     }
 
     return parsed
   })
+
+  console.log(`Parsed Node: ${JSON.stringify(graphNodes)}`);
 
   graphNodes.forEach((node) => {
     if (node.parentNode && ![...graphNodes, ...currGraphNodes].find((n) => n.id === node.parentNode)) {
@@ -118,7 +121,6 @@ const createGraphNodes = (nodes: Node[], getNode: Getters['getNode'], currGraphN
 export default (state: State, getters: ComputedGetters): Actions => {
   const updateNodePosition: Actions['updateNodePosition'] = ({ id, diff = { x: 0, y: 0 }, dragging }) => {
     const changes: NodePositionChange[] = []
-
     state.nodes.forEach((node) => {
       if (node.selected) {
         if (!node.parentNode) {

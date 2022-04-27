@@ -1,4 +1,4 @@
-import { XYPosition, Position, SnapGrid, Element, XYZPosition, Dimensions, ElementData, Metadata } from './flow'
+import { XYPosition, Position, SnapGrid, Element, XYZPosition, Dimensions, ElementData } from './flow'
 import { DefaultNodeTypes } from './components'
 import { HandleElement, ValidConnectionFunc } from './handle'
 
@@ -79,6 +79,5 @@ export interface NodeProps<Data = ElementData> {
   zIndex: number
   targetPosition?: Position
   sourcePosition?: Position
-  dragHandle?: string,
-  metadata: Metadata
+  dragHandle?: string
 }

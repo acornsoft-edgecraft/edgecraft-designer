@@ -1,6 +1,6 @@
 <script lang="ts" setup>
 import Handle from "../Handle/Handle.vue";
-import { Position, Metadata } from "../../types";
+import { Position } from "../../types";
 import type { NodeProps } from "../../types/node";
 
 const props = withDefaults(defineProps<NodeProps>(), {
@@ -16,7 +16,5 @@ export default {
 <template>
   <component v-if="typeof props.label !== 'string' && props.label" :is="props.label.component" v-bind="props.label.props" />
   <span v-else v-html="props.label" />
-  <br />
-  {{ props.metadata }}
   <Handle type="source" :position="props.sourcePosition" :connectable="props.connectable" :is-valid-connection="props.isValidSourcePos" />
 </template>

@@ -12,6 +12,7 @@ import {
   DefaultNode,
   InputNode,
   OutputNode,
+  GroupNode,
   BezierEdge,
   SmoothStepEdge,
   StepEdge,
@@ -23,6 +24,7 @@ export const defaultNodeTypes: DefaultNodeTypes = {
   input: InputNode,
   default: DefaultNode,
   output: OutputNode,
+  group: GroupNode
 }
 
 export const defaultEdgeTypes: DefaultEdgeTypes = {

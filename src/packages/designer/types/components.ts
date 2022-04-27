@@ -20,7 +20,7 @@ export type EdgeComponent<Data = ElementData> =
   | GlobalComponentName
 
 export type DefaultEdgeTypes = { [key in 'default' | 'straight' | 'smoothstep' | 'step' | 'simplebezier']: EdgeComponent }
-export type DefaultNodeTypes = { [key in 'input' | 'output' | 'default']: NodeComponent }
+export type DefaultNodeTypes = { [key in 'input' | 'output' | 'default' | 'group']: NodeComponent }
 
 export interface BackgroundProps {
   /** The background pattern variant, {@link BackgroundVariant} */
@@ -100,11 +100,11 @@ export interface EdgeTextProps extends HTMLAttributes {
   x: number
   y: number
   label?:
-    | string
-    | {
-        component: any
-        props?: any
-      }
+  | string
+  | {
+    component: any
+    props?: any
+  }
   labelStyle?: CSSProperties
   labelShowBg?: boolean
   labelBgStyle?: CSSProperties

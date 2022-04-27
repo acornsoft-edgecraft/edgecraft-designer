@@ -33,8 +33,10 @@
 </template>
 
 <script setup lang="ts">
-import { VueFlow, MiniMap, Controls, Background, Node, FlowInstance, useVueFlow } from "~/packages/designer";
+import { VueFlow, MiniMap, Controls, Background, Node, FlowInstance, useVueFlow, XYPosition, graphPosToZoomedPos } from "~/packages/designer";
+import { getMousePosition } from "~/packages/designer/components/UserSelection/utils";
 import { InputNodeTypes, DefaultNodeTypes, OutputNodeTypes } from "~/models/designer";
+const { instance, onConnect, addEdges, addNodes, getSelectedNodes, getSelectedElements, getSelectedEdges, store, getNodes, updateNodePosition } = useVueFlow();
 /**
  * 여기서는 해당 화면 생성 이전에 처리할 설정을 구성합니다.
  * this 등의 사용이 불가능합니다.
@@ -49,17 +51,36 @@ definePageMeta({ layout: "default", title: "Designer PoC", public: false });
 // Properties
 let id = 0;
 const getId = () => `dndnode_${id++}`;
-const { instance, onConnect, addEdges, addNodes, getSelectedNodes, getSelectedElements, getSelectedEdges } = useVueFlow({
-  nodes: [
-    {
-      id: "1",
-      type: "input",
-      label: "input node",
-      position: { x: 250, y: 5 },
-      metadata: { name: "input_schema" },
-    },
-  ],
-});
+const getPosition = (event) => {
+  const relatedPos = getMousePosition(event) as XYPosition;
+  const pos = instance.value.project({ x: relatedPos.x, y: relatedPos.y - 40 });
+  return pos;
+};
+// const { instance, onConnect, addEdges, addNodes, getSelectedNodes, getSelectedElements, getSelectedEdges, getNodes, updateNodePosition } = useVueFlow({
+//   nodes: [
+//     {
+//       id: "1",
+//       type: "input",
+//       label: "input node",
+//       position: { x: 250, y: 5 },
+//     },
+//     {
+//       id: "2",
+//       type: "group",
+//       label: "group node",
+//       position: { x: 300, y: 10 },
+//     },
+//     {
+//       id: "2a",
+//       type: "input",
+//       label: "input node in group",
+//       position: { x: 10, y: 10 },
+//       parentNode: "2",
+//       //extent: "parent",
+//       expandParent: true,
+//     },
+//   ],
+// });
 
 const schema = ref({
   labelWidth: "120px",
@@ -266,7 +287,18 @@ data.value = {
 // Compputed
 // Watcher
 // Methods
-
+// const checkNode = (x, y) => {
+//   let target = null;
+//   getNodes.value.forEach((node) => {
+//     if (node.computedPosition.x <= x && node.computedPosition.y <= y) {
+//       if (node.computedPosition.x + node.dimensions.width >= x && node.computedPosition.y + node.dimensions.height >= y) {
+//         target = node;
+//         return;
+//       }
+//     }
+//   });
+//   return target;
+// };
 const onClick = () => {
   if (getSelectedNodes.value.length > 0) {
     console.log(`selected nodes: ${JSON.stringify(getSelectedNodes.value[0])}`);
@@ -282,9 +314,9 @@ const onClick = () => {
         schema.value.rows = OutputNodeTypes;
         break;
     }
-    data.value = node.metadata;
-    data.value["enabled"] = true;
-    data.value["id"] = node.id;
+    data.value = node.data || {};
+    data.value.enabled = true;
+    data.value.id = node.id;
   }
   if (getSelectedEdges.value.length > 0) {
     console.log(`selected edges: ${JSON.stringify(getSelectedEdges.value[0])}`);
@@ -302,21 +334,51 @@ const onDragOver = (event: DragEvent) => {
     event.dataTransfer.dropEffect = "move";
   }
 };
+
 // Add new node on drag-stop event.
 const onDrop = (event: DragEvent) => {
   if (instance.value) {
     const type = event.dataTransfer?.getData("application/vueflow");
-    const position = instance.value.project({ x: event.clientX - 500, y: event.clientY - 200 });
+    const position = getPosition(event);
+    const _id = getId();
     const newNode = {
-      id: getId(),
+      id: _id,
       type,
       position,
       label: `${type} node`,
-      metadata: { name: "test-node" },
+      data: { name: "test-node", enabled: true, id: _id },
     } as Node;
+    console.log(`New Node: ${JSON.stringify(newNode)}`);
     addNodes([newNode]);
+    updateNodePosition({ id: _id, diff: { x: 0, y: 0 } });
   }
 };
+// const onDrop = (event: DragEvent) => {
+//   event.stopPropagation();
+//   console.log(`Drop on IndexPage`);
+
+//   if (instance.value) {
+//     const pos = getMousePosition(event) as XYPosition;
+//     const node = checkNode(pos.x, pos.y);
+//     const isChild = node && node.type === "group";
+//     const type = event.dataTransfer?.getData("application/vueflow");
+//     const position = getPosition(node, pos);
+//     const _id = getId(node);
+//     const newNode = {
+//       id: _id,
+//       type,
+//       position,
+//       label: `${type} node`,
+//       data: { name: "test-node", enabled: true, id: _id },
+//       parentNode: isChild ? node.id : undefined,
+//       extent: isChild ? "parent" : "",
+//       expandParent: isChild ? true : false,
+//     } as Node;
+//     addNodes([newNode]);
+//     if (isChild) updateNodePosition({ id: node.id, diff: { x: 0, y: 0 } });
+//     updateNodePosition({ id: _id, diff: { x: 0, y: 0 } });
+//   }
+// };
 // Events
 onConnect((params) => addEdges([params]));
 onMounted(() => {});

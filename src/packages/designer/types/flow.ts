@@ -24,11 +24,6 @@ export type Styles = CSSProperties & ThemeVars & CustomThemeVars
 export type ClassFunc<Data = ElementData> = (element: FlowElement<Data>) => string
 export type StyleFunc<Data = ElementData> = (element: FlowElement<Data>) => Styles
 
-/* Meta data for elements */
-export type Metadata = {
-  name: string
-}
-
 /** base element props */
 export interface Element<Data extends ElementData = ElementData> {
   id: string
@@ -39,11 +34,10 @@ export interface Element<Data extends ElementData = ElementData> {
     component: any
   }
   type?: string
-  data?: Data
+  data?: Data | { enabled: true }
   class?: string | ClassFunc<Data>
   style?: Styles | StyleFunc<Data>
   hidden?: boolean
-  metadata: Metadata
 }
 export type Elements<NodeData = ElementData, EdgeData = ElementData> = (Node<NodeData> | Edge<EdgeData>)[]
 

@@ -205,7 +205,6 @@ export default {
         :target-position="node.targetPosition"
         :source-position="node.sourcePosition"
         :label="node.label"
-        :metadata="node.metadata"
         :drag-handle="node.dragHandle" />
     </div>
   </DraggableCore>
