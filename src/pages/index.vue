@@ -33,10 +33,12 @@
 </template>
 
 <script setup lang="ts">
-import { VueFlow, MiniMap, Controls, Background, Node, FlowInstance, useVueFlow, XYPosition, graphPosToZoomedPos } from "~/packages/designer";
+import { VueFlow, MiniMap, Controls, Background, Node, FlowInstance, useVueFlow, XYPosition, SmoothStepEdge, graphPosToZoomedPos } from "~/packages/designer";
 import { getMousePosition } from "~/packages/designer/components/UserSelection/utils";
 import { InputNodeTypes, DefaultNodeTypes, OutputNodeTypes } from "~/models/designer";
-const { instance, onConnect, addEdges, addNodes, getSelectedNodes, getSelectedElements, getSelectedEdges, store, getNodes, updateNodePosition } = useVueFlow();
+const { instance, onConnect, addEdges, addNodes, getSelectedNodes, getSelectedElements, getSelectedEdges, store, getNodes, updateNodePosition } = useVueFlow({
+  edgeTypes: { default: SmoothStepEdge },
+});
 /**
  * 여기서는 해당 화면 생성 이전에 처리할 설정을 구성합니다.
  * this 등의 사용이 불가능합니다.
