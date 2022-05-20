@@ -1,5 +1,5 @@
 import { rectToBox } from './graph'
-import { EdgePositions, GraphEdge, GraphNode, HandleElement, Position, Rect, Transform, XYPosition } from '~/packages/designer/types'
+import { EdgePositions, Getters, GraphEdge, GraphNode, HandleElement, Position, Rect, Viewport, XYPosition } from '../types'
 
 export const getHandlePosition = (position: Position, rect: Rect, handle?: HandleElement): XYPosition => {
   const x = (handle?.x ?? 0) + rect.x
@@ -34,13 +34,11 @@ export const getHandlePosition = (position: Position, rect: Rect, handle?: Handl
 export const getHandle = (bounds: HandleElement[] = [], handleId?: string | null): HandleElement | undefined => {
   if (!bounds.length) return undefined
 
-  // there is no handleId when there are no multiple handles/ handles with ids
-  // so we just pick the first one
   let handle
-  if (bounds.length === 1 ?? !handleId) handle = bounds[0]
+  if (!handleId && bounds.length === 1) handle = bounds[0]
   else if (handleId) handle = bounds.find((d) => d.id === handleId)
 
-  return handle
+  return handle || bounds[0]
 }
 
 export const getEdgePositions = (
@@ -85,7 +83,7 @@ interface IsEdgeVisibleParams {
   targetHeight: number
   width: number
   height: number
-  transform: Transform
+  viewport: Viewport
 }
 
 export function isEdgeVisible({
@@ -97,7 +95,7 @@ export function isEdgeVisible({
   targetHeight,
   width,
   height,
-  transform,
+  viewport,
 }: IsEdgeVisibleParams): boolean {
   const edgeBox = {
     x: Math.min(sourcePos.x, targetPos.x),
@@ -115,10 +113,10 @@ export function isEdgeVisible({
   }
 
   const viewBox = rectToBox({
-    x: (0 - transform[0]) / transform[2],
-    y: (0 - transform[1]) / transform[2],
-    width: width / transform[2],
-    height: height / transform[2],
+    x: (0 - viewport.x) / viewport.zoom,
+    y: (0 - viewport.y) / viewport.zoom,
+    width: width / viewport.zoom,
+    height: height / viewport.zoom,
   })
 
   const xOverlap = Math.max(0, Math.min(viewBox.x2, edgeBox.x2) - Math.max(viewBox.x, edgeBox.x))
@@ -128,17 +126,16 @@ export function isEdgeVisible({
   return overlappingArea > 0
 }
 
-export const groupEdgesByZLevel = (edges: GraphEdge[], nodes: GraphNode[]) => {
+export const groupEdgesByZLevel = (edges: GraphEdge[], getNode: Getters['getNode']) => {
   let maxLevel = -1
-  const nodeIds = nodes.map((n) => n.id)
 
   const levelLookup = edges.reduce<Record<string, GraphEdge[]>>((tree, edge) => {
-    const z = edge.z
-      ? edge.z
-      : Math.max(
-        nodes[nodeIds.indexOf(edge.source)]?.computedPosition.z || 0,
-        nodes[nodeIds.indexOf(edge.target)]?.computedPosition.z || 0,
-      )
+    const source = getNode(edge.source)
+    const target = getNode(edge.target)
+
+    if (!source || !target) return tree
+
+    const z = edge.z ? edge.z : Math.max(source.computedPosition.z || 0, target.computedPosition.z || 0)
     if (tree[z]) {
       tree[z].push(edge)
     } else {

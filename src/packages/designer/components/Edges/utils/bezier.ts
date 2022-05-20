@@ -1,4 +1,4 @@
-import { Position } from '~/packages/designer'
+import { Position } from '../../../types'
 
 interface GetControlWithCurvatureParams {
   pos: Position

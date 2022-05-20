@@ -1,4 +1,12 @@
 export { default as DefaultNode } from './DefaultNode.vue'
 export { default as InputNode } from './InputNode.vue'
 export { default as OutputNode } from './OutputNode.vue'
-export { default as GroupNode } from './GroupNode.vue'
+//MOD: 신규 노드 형식 Export
+export { default as CloudNode } from './Designer/CloudNode.vue'
+export { default as MasterNode } from './Designer/MasterNode.vue'
+export { default as WorkerNode } from './Designer/WorkerNode.vue'
+export { default as RegistryNode } from './Designer/RegistryNode.vue'
+export { default as LoadbalancerNode } from './Designer/LoadbalancerNode.vue'
+export { default as ETCDClusterNode } from './Designer/ETCDClusterNode.vue'
+export { default as StorageServerNode } from './Designer/StorageServerNode.vue'
+export { default as StorageClusterNode } from './Designer/StorageClusterNode.vue'

@@ -1,20 +1,40 @@
 <script lang="ts" setup>
-import { CSSProperties } from "vue";
-import type { MiniMapNodeProps } from "../../types/components";
+import { CSSProperties } from 'vue'
+import type { MiniMapNodeProps } from '../../types/components'
 
 const props = withDefaults(defineProps<MiniMapNodeProps>(), {
-  shapeRendering: "geometricPrecision",
-});
-const attrs = useAttrs();
+  shapeRendering: 'geometricPrecision',
+})
 
-const styles = (attrs.style ?? {}) as CSSProperties;
-const fill = computed(() => props.color || (styles.background as string) || styles.backgroundColor);
+const emit = defineEmits(['click', 'dblClick'])
+
+const attrs: any = useAttrs()
+
+const styles = (attrs.style ?? {}) as CSSProperties
+const fill = computed(() => props.color || (styles.background as string) || styles.backgroundColor)
 </script>
 <script lang="ts">
 export default {
-  name: "MiniMapNode",
-};
+  name: 'MiniMapNode',
+}
 </script>
 <template>
-  <rect class="vue-flow__minimap-node" :x="props.position.x" :y="props.position.y" :rx="props.borderRadius" :ry="props.borderRadius" :width="props.dimensions.width" :height="props.dimensions.height" :fill="fill" :stroke="props.strokeColor" :stroke-width="props.strokeWidth" :shape-rendering="props.shapeRendering" />
+  <rect
+    class="vue-flow__minimap-node"
+    :class="attrs.class"
+    :style="attrs.style"
+    :x="props.position.x"
+    :y="props.position.y"
+    :rx="props.borderRadius"
+    :ry="props.borderRadius"
+    :width="props.dimensions.width"
+    :height="props.dimensions.height"
+    :fill="fill"
+    :stroke="props.strokeColor"
+    :stroke-width="props.strokeWidth"
+    :shape-rendering="props.shapeRendering"
+    @click="emit('click')"
+    @dblClick="emit('dblClick')"
+  />
+  <slot />
 </template>

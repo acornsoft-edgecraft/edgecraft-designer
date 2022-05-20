@@ -178,5 +178,4 @@ export default defineNuxtPlugin((nuxtApp) => {
     nuxtApp.vueApp.component('K3TreeTable', TreeTable);
     nuxtApp.vueApp.component('K3TriStateCheckbox', TriStateCheckbox);
     //other components that you need
-    console.log('plugin initialized')
 });

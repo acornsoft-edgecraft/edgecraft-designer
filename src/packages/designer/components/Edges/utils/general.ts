@@ -1,4 +1,4 @@
-import { Position } from '~/packages/designer'
+import { Position } from '../../../types'
 
 export interface GetCenterParams {
   sourceX: number

@@ -1,5 +1,5 @@
 import { getDimensions } from './graph'
-import { HandleElement, Position } from '~/packages/designer/types'
+import { HandleElement, Position } from '../types'
 
 export const getHandleBoundsByHandleType = (
   selector: string,

@@ -1,5 +1,5 @@
 import { getCenter } from './general'
-import { Position } from '~/packages/designer'
+import { Position } from '../../../types'
 
 export interface GetSmoothStepPathParams {
   sourceX: number

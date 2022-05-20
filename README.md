@@ -40,3 +40,14 @@ npm run preview
 ```
 
 Checkout the [deployment documentation](https://v3.nuxtjs.org/docs/deployment) for more information.
+
+
+
+## Validation
+
+#### Cluster
+
+- NodeCount > 0
+- Master HA 구성 갯수 및 취소 시 초기화
+
+#### Node

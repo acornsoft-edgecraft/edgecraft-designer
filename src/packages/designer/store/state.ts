@@ -7,24 +7,41 @@ import {
   DefaultEdgeTypes,
   ConnectionLineType,
   FlowOptions,
-} from '~/packages/designer/types'
+} from '../types'
 import {
   DefaultNode,
   InputNode,
   OutputNode,
-  GroupNode,
   BezierEdge,
   SmoothStepEdge,
   StepEdge,
   StraightEdge,
   SimpleBezierEdge,
-} from '~/packages/designer/components'
+  //MOD: 신규 노드 추가
+  CloudNode,
+  MasterNode,
+  WorkerNode,
+  RegistryNode,
+  LoadbalancerNode,
+  ETCDClusterNode,
+  StorageServerNode,
+  StorageClusterNode
+} from '../components'
 
+// MOD: 기본으로 사용할 노드 추가
 export const defaultNodeTypes: DefaultNodeTypes = {
   input: InputNode,
   default: DefaultNode,
   output: OutputNode,
-  group: GroupNode
+  //MOD: 기본 노드 추가
+  cloud: CloudNode,
+  master: MasterNode,
+  worker: WorkerNode,
+  registry: RegistryNode,
+  loadbalancer: LoadbalancerNode,
+  etcdcluster: ETCDClusterNode,
+  storageserver: StorageServerNode,
+  storagecluster: StorageClusterNode
 }
 
 export const defaultEdgeTypes: DefaultEdgeTypes = {
@@ -40,8 +57,9 @@ const isDef = <T>(val: T): val is NonNullable<T> => typeof val !== 'undefined'
 const defaultState = (): State => ({
   nodes: [],
   edges: [],
+  nodeTypes: {},
+  edgeTypes: {},
 
-  paneReady: false,
   initialized: false,
   instance: null,
 
@@ -49,7 +67,7 @@ const defaultState = (): State => ({
     width: 0,
     height: 0,
   },
-  transform: [0, 0, 1],
+  viewport: { x: 0, y: 0, zoom: 1 },
 
   d3Zoom: null,
   d3Selection: null,
@@ -118,7 +136,8 @@ const defaultState = (): State => ({
   noPanClassName: 'nopan',
   defaultEdgeOptions: undefined,
 
-  vueFlowVersion: "0.4.1",
+  //vueFlowVersion: typeof __VUE_FLOW_VERSION__ !== 'undefined' ? __VUE_FLOW_VERSION__ : '-',
+  vueFlowVersion: '0.4.7',
 })
 
 export default (opts?: FlowOptions): State => {

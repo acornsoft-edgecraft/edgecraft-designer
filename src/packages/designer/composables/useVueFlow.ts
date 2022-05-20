@@ -1,9 +1,9 @@
 import { EffectScope } from 'vue'
-import { ElementData, FlowHooksOn, FlowOptions, State, UseVueFlow } from '~/packages/designer/types'
-import { VueFlow } from '~/packages/designer/context'
-import useState from '~/packages/designer/store/state'
-import useGetters from '~/packages/designer/store/getters'
-import useActions from '~/packages/designer/store/actions'
+import { FlowHooksOn, FlowOptions, State, UseVueFlow } from '../types'
+import { VueFlow } from '../context'
+import useState from '../store/state'
+import useGetters from '../store/getters'
+import useActions from '../store/actions'
 
 export class Storage {
   public currentId = 0
@@ -53,6 +53,7 @@ export class Storage {
       ...getters,
       ...actions,
     })
+
     const flow: UseVueFlow = {
       ...hooksOn,
       ...getters,
@@ -61,7 +62,9 @@ export class Storage {
       id,
       store,
     }
+
     this.set(id, flow)
+
     return flow
   }
 
@@ -70,17 +73,15 @@ export class Storage {
   }
 }
 
-type Injection<NodeData = ElementData, EdgeData = ElementData> = UseVueFlow<NodeData, EdgeData> | null | undefined
+type Injection = UseVueFlow | null | undefined
 type Scope = (EffectScope & { vueFlowId: string }) | undefined
 
-export default <NodeData = ElementData, EdgeData = ElementData>(
-  options?: Partial<FlowOptions>,
-): UseVueFlow<NodeData, EdgeData> => {
+export default (options?: Partial<FlowOptions>): UseVueFlow => {
   const storage = Storage.getInstance()
   const scope = getCurrentScope() as Scope
   const vueFlowId = scope?.vueFlowId || options?.id
 
-  let vueFlow: Injection<any, any>
+  let vueFlow: Injection
 
   if (scope) {
     const injection = inject(VueFlow, null)
@@ -108,7 +109,7 @@ export default <NodeData = ElementData, EdgeData = ElementData>(
     if (options) vueFlow.setState(options)
   }
 
-  if (!vueFlow) throw new Error('vue flow store instance not found.')
+  if (!vueFlow) throw new Error('[vueflow]: store instance not found.')
 
   if (scope) provide(VueFlow, vueFlow)
 

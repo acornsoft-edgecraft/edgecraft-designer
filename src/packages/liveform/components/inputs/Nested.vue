@@ -2,18 +2,33 @@
   <div class="sf-nested-rows">
     <table>
       <tr>
-        <td class="sf-nested-column" v-for="(column, columnIndex) in config.columns" :key="`column-label-${columnIndex}`">
+        <td class="sf-nested-column"
+            v-for="(column, columnIndex) in config.columns"
+            :key="`column-label-${columnIndex}`">
           {{ column.label ?? column.field }}
         </td>
       </tr>
-      <tr v-for="(row, rowIndex) in modelValue[config.field!]" :key="`row-${rowIndex}`" class="sf-nested-row">
-        <td v-for="(column, columnIndex) in config.columns" :key="`column-${columnIndex}`" class="sf-nested-column">
-          <component :is="getComponent(column.type)" v-model="nestedModel[rowIndex]" :config="column" :readonly="column.readonly ?? false" @change="emitChange" v-if="evaluateConditionalDisplay(column, nestedModel[rowIndex])" />
+      <tr v-for="(row, rowIndex) in modelValue[config.field!]"
+          :key="`row-${rowIndex}`"
+          class="sf-nested-row">
+        <td v-for="(column, columnIndex) in config.columns"
+            :key="`column-${columnIndex}`"
+            class="sf-nested-column">
+          <component :is="getComponent(column.type)"
+                     v-model="nestedModel[rowIndex]"
+                     :config="column"
+                     :readonly="evaluateReadonlyCondition(column.readonly, nestedModel[rowIndex])"
+                     @change="emitChange"
+                     v-if="evaluateConditionalDisplay(column, nestedModel[rowIndex])" />
         </td>
-        <td class="sf-nested-delete" @click="removeNestedItem(rowIndex)" tabindex="0" />
+        <td class="sf-nested-delete"
+            @click="removeNestedItem(rowIndex)"
+            tabindex="0" />
       </tr>
     </table>
-    <button class="sf-nested-row add-row" tabindex="0" @click="insertNestedItem">Add Entry</button>
+    <button class="sf-nested-row add-row"
+            tabindex="0"
+            @click="insertNestedItem">Add Entry</button>
   </div>
 </template>
 <script setup lang="ts">
@@ -21,7 +36,7 @@ import { defineProps, defineEmits, onMounted, PropType } from "@vue/runtime-core
 import { ref } from "@vue/reactivity";
 import type { RowType } from "../../types/Types";
 import getComponent from "../componentMap";
-import evaluateConditionalDisplay from "../../helpers/evaluateConditionalDisplay";
+import { evaluateConditionalDisplay, evaluateReadonlyCondition } from "../../helpers/condition";
 
 const emit = defineEmits(["change"]);
 let emitChange = () => {
@@ -56,7 +71,6 @@ let insertNestedItem = () => {
     // the new key to be an array so deeper nested inputs can push to it.
     newObject[columnSchema[index]["field"]] = columnSchema[index]["type"] === "nested" ? [] : null;
   }
-  console.log(JSON.stringify(newObject));
   nestedModel.value.push(newObject);
   emitChange();
 };
@@ -117,6 +131,7 @@ $delete: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' class
     .sf-nested-column {
       margin: 0 6px;
       position: relative;
+
       input[type="text"],
       input[type="password"],
       input[type="date"],

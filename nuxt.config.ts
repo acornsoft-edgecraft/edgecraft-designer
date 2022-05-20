@@ -22,7 +22,7 @@ export default defineNuxtConfig({
     // Runtime config
     runtimeConfig: {
         public: {
-            DRAGGABLE_DEBUG: process.env.DRAGGABLE_DEBUG || true
+            DRAGGABLE_DEBUG: process.env.DRAGGABLE_DEBUG || false
         }
     },
     // Build modules
@@ -40,6 +40,10 @@ export default defineNuxtConfig({
             layouts: true
         }
     },
+    // Typescript 
+    typescript: {
+        shim: false // Take Over Mode or install Typescript Vue Plugin (Volar).
+    }
     // Vite
     // vite: {
     //     plugins: [

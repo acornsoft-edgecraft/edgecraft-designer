@@ -1,6 +1,6 @@
 import useVueFlow from './useVueFlow'
-import { getHostForElement } from '~/packages/designer/utils'
-import { Connection, ConnectionMode, HandleType, Store, ValidConnectionFunc } from '~/packages/designer/types'
+import { getHostForElement } from '../utils'
+import { Connection, ConnectionMode, Getters, GraphEdge, HandleType, Store, ValidConnectionFunc } from '../types'
 
 type Result = {
   elementBelow: Element | null
@@ -18,6 +18,8 @@ export const checkElementBelowIsValid = (
   handleId: string | null,
   isValidConnection: ValidConnectionFunc,
   doc: Document,
+  edges: GraphEdge[],
+  getNode: Getters['getNode'],
 ) => {
   const elementBelow = doc.elementFromPoint(event.clientX, event.clientY)
   const elementBelowIsTarget = elementBelow?.classList.contains('target') || false
@@ -26,7 +28,7 @@ export const checkElementBelowIsValid = (
   const result: Result = {
     elementBelow,
     isValid: false,
-    connection: { source: null, target: null, sourceHandle: null, targetHandle: null },
+    connection: { source: '', target: '', sourceHandle: null, targetHandle: null },
     isHoveringHandle: false,
   }
 
@@ -40,22 +42,24 @@ export const checkElementBelowIsValid = (
     if (isValid) {
       const elementBelowNodeId = elementBelow.getAttribute('data-nodeid') ?? ''
       const elementBelowHandleId = elementBelow.getAttribute('data-handleid') ?? ''
-      const connection: Connection = isTarget
-        ? {
-          source: elementBelowNodeId,
-          sourceHandle: elementBelowHandleId,
-          target: nodeId,
-          targetHandle: handleId,
-        }
-        : {
-          source: nodeId,
-          sourceHandle: handleId,
-          target: elementBelowNodeId,
-          targetHandle: elementBelowHandleId,
-        }
+
+      const sourceId = isTarget ? elementBelowNodeId : nodeId
+      const sourceHandleId = isTarget ? elementBelowHandleId : handleId
+      const targetId = isTarget ? nodeId : elementBelowNodeId
+      const targetHandleId = isTarget ? handleId : elementBelowHandleId
+
+      const connection: Connection = {
+        source: sourceId,
+        sourceHandle: sourceHandleId,
+        target: targetId,
+        targetHandle: targetHandleId,
+      }
 
       result.connection = connection
-      result.isValid = isValidConnection(connection)
+      result.isValid =
+        isValidConnection(connection, { edges, sourceNode: getNode(sourceId)!, targetNode: getNode(targetId)! }) ||
+        !result.connection.target ||
+        !result.connection.source
     }
   }
 
@@ -124,6 +128,8 @@ export default (store: Store = useVueFlow().store) => {
         handleId,
         validConnectFunc,
         doc,
+        store.edges,
+        store.getNode,
       )
 
       if (!isHoveringHandle) return resetRecentHandle(recentHoveredHandle)
@@ -146,13 +152,16 @@ export default (store: Store = useVueFlow().store) => {
         handleId,
         validConnectFunc,
         doc,
+        store.edges,
+        store.getNode,
       )
 
       store.hooks.connectStop.trigger(event)
       const isOwnHandle = connection.source === connection.target
 
       if (isValid && !isOwnHandle) {
-        onEdgeUpdate?.(connection)
+        if (!onEdgeUpdate) store.hooks.connect.trigger(connection)
+        else onEdgeUpdate(connection)
       }
 
       store.hooks.connectEnd.trigger(event)
@@ -203,6 +212,8 @@ export default (store: Store = useVueFlow().store) => {
         store.connectionStartHandle.handleId || null,
         validConnectFunc,
         doc,
+        store.edges,
+        store.getNode,
       )
 
       const isOwnHandle = connection.source === connection.target

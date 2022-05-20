@@ -5,10 +5,10 @@ import { FlowTransform, PanOnScrollMode } from '../../types'
 import { useKeyPress, useVueFlow } from '../../composables'
 import { clamp, clampPosition } from '../../utils'
 import SelectionPane from '../SelectionPane/SelectionPane.vue'
-import TransformationPane from '../TransformationPane/TransformationPane.vue'
+import Transform from './Transform.vue'
 
-const { id, store } = useVueFlow()
-const zoomPaneEl = templateRef<HTMLDivElement>('zoomPane', null)
+const { id, store, zoomActivationKeyCode, selectionKeyCode } = useVueFlow()
+const viewportEl = templateRef<HTMLDivElement>('viewport', null)
 
 const viewChanged = (prevTransform: FlowTransform, eventTransform: ZoomTransform): boolean =>
   (prevTransform.x !== eventTransform.x && !isNaN(eventTransform.x)) ||
@@ -28,11 +28,20 @@ const transform = ref({
   ...clampPosition({ x: store.defaultPosition[0], y: store.defaultPosition[1] }, store.translateExtent),
   zoom: clampedZoom,
 })
-const { width, height } = useElementBounding(zoomPaneEl)
+const { width, height } = useElementBounding(viewportEl)
+
+watch(
+  [width, height],
+  ([newWidth, newHeight]) => {
+    store.dimensions.width = newWidth
+    store.dimensions.height = newHeight
+  },
+  { immediate: true },
+)
 
 onMounted(() => {
   const d3Zoom = zoom<HTMLDivElement, any>().scaleExtent([store.minZoom, store.maxZoom]).translateExtent(store.translateExtent)
-  const d3Selection = select(zoomPaneEl.value).call(d3Zoom)
+  const d3Selection = select(viewportEl.value).call(d3Zoom)
   const d3ZoomHandler = d3Selection.on('wheel.zoom')
 
   const updatedTransform = zoomIdentity.translate(transform.value.x, transform.value.y).scale(transform.value.zoom)
@@ -42,22 +51,22 @@ onMounted(() => {
     d3Zoom,
     d3Selection,
     d3ZoomHandler,
-    transform: [updatedTransform.x, updatedTransform.y, updatedTransform.k],
+    viewport: { x: updatedTransform.x, y: updatedTransform.y, zoom: updatedTransform.k },
   })
 
-  const selectionKeyPressed = useKeyPress(store.selectionKeyCode, (keyPress) => {
+  const selectionKeyPressed = useKeyPress(selectionKeyCode, (keyPress) => {
     if (keyPress) {
       d3Zoom.on('zoom', null)
     } else {
       d3Zoom.on('zoom', (event: D3ZoomEvent<HTMLDivElement, any>) => {
-        store.setState({ transform: [event.transform.x, event.transform.y, event.transform.k] })
+        store.setState({ viewport: { x: event.transform.x, y: event.transform.y, zoom: event.transform.k } })
         const flowTransform = eventToFlowTransform(event.transform)
         store.hooks.move.trigger({ event, flowTransform })
       })
     }
   })
 
-  const zoomKeyPressed = useKeyPress(store.zoomActivationKeyCode)
+  const zoomKeyPressed = useKeyPress(zoomActivationKeyCode)
 
   d3Zoom.on('start', (event: D3ZoomEvent<HTMLDivElement, any>) => {
     const flowTransform = eventToFlowTransform(event.transform)
@@ -147,26 +156,17 @@ onMounted(() => {
     return (!event.ctrlKey || event.type === 'wheel') && !event.button
   })
 })
-
-watch(
-  [width, height],
-  ([newWidth, newHeight]) => {
-    store.dimensions.width = newWidth
-    store.dimensions.height = newHeight
-  },
-  { immediate: true },
-)
 </script>
 <script lang="ts">
 export default {
-  name: 'ZoomPane',
+  name: 'Viewport',
 }
 </script>
 <template>
-  <div ref="zoomPane" class="vue-flow__renderer vue-flow__container">
-    <TransformationPane>
+  <div ref="viewport" :key="`viewport-${id}`" class="vue-flow__viewport vue-flow__container">
+    <Transform>
       <slot />
-    </TransformationPane>
+    </Transform>
     <SelectionPane :key="`selection-pane-${id}`" />
   </div>
 </template>

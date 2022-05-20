@@ -1,11 +1,9 @@
 <template>
-	<input
-		v-model="modelValue[config.field!]"
-		:class="{ readonly: config.readonly }"
-		:readonly="config.readonly"
-		:type="config.type"
-		@change="emitChange"
-	/>
+	<K3InputText class="p-inputtext-sm"
+				 :type="config.type"
+				 :disabled="readonly"
+				 v-model="modelValue[config.field!]"
+				 @change="emitChange" />
 </template>
 <script setup lang="ts">
 import { defineProps, defineEmits, PropType } from '@vue/runtime-core';
@@ -25,10 +23,17 @@ defineProps({
 		type: Object as PropType<RowType>,
 		required: true,
 	},
+	readonly: {
+		type: Boolean,
+		required: true,
+	}
 });
 </script>
 <style lang="scss" scoped>
-.readonly {
-	opacity: 0.6;
+.p-inputtext {
+	border-radius: 0;
+	border: none;
+	font-size: .875rem;
+	padding: 0.15rem;
 }
 </style>

@@ -2,25 +2,26 @@ import {
   Box,
   Connection,
   CoordinateExtent,
+  DefaultEdgeOptions,
   Dimensions,
   Edge,
   EdgeMarkerType,
   Elements,
+  FlowElement,
   FlowElements,
   FlowExportObject,
-  State,
-  Store,
+  Getters,
   GraphEdge,
   GraphNode,
   Node,
   Rect,
-  Transform,
+  State,
+  Store,
+  Viewport,
   XYPosition,
   XYZPosition,
-  Getters,
-  DefaultEdgeOptions,
-} from '~/packages/designer/types'
-import { useWindow } from '~/packages/designer/composables'
+} from '../types'
+import { useWindow } from '../composables'
 
 const isHTMLElement = (el: EventTarget): el is HTMLElement => ('nodeName' || 'hasAttribute') in el
 
@@ -52,18 +53,18 @@ export const getHostForElement = (element: HTMLElement): Document => {
   else return window.document
 }
 
-export const isEdge = (element: Node | Edge | Connection): element is Edge =>
-  'id' in element && 'source' in element && 'target' in element
-export const isGraphEdge = (element: any): element is GraphEdge =>
+type MaybeElement = Node | Edge | Connection | FlowElement
+export const isEdge = (element: MaybeElement): element is Edge => 'id' in element && 'source' in element && 'target' in element
+export const isGraphEdge = (element: MaybeElement): element is GraphEdge =>
   isEdge(element) && 'sourceNode' in element && 'targetNode' in element
 
-export const isNode = (element: Node | Edge | Connection): element is Node => 'id' in element && !isEdge(element)
-export const isGraphNode = (element: Node | Edge | Connection): element is GraphNode =>
-  isNode(element) && 'computedPosition' in element
+export const isNode = (element: MaybeElement): element is Node => 'id' in element && !isEdge(element)
+export const isGraphNode = (element: MaybeElement): element is GraphNode => isNode(element) && 'computedPosition' in element
 
 export const parseNode = (node: Node, nodeExtent: CoordinateExtent, defaults?: Partial<GraphNode>): GraphNode => {
-  defaults = !isGraphNode(node)
-    ? {
+  let defaultValues = defaults
+  if (!isGraphNode(node)) {
+    defaultValues = {
       type: node.type ?? 'default',
       dimensions: {
         width: 0,
@@ -75,7 +76,8 @@ export const parseNode = (node: Node, nodeExtent: CoordinateExtent, defaults?: P
       },
       computedPosition: {
         z: 0,
-        ...clampPosition(node.position, nodeExtent),
+        x: 0,
+        y: 0,
       },
       dragging: false,
       draggable: undefined,
@@ -83,10 +85,10 @@ export const parseNode = (node: Node, nodeExtent: CoordinateExtent, defaults?: P
       connectable: undefined,
       ...defaults,
     }
-    : defaults
+  }
 
   return {
-    ...(defaults as GraphNode),
+    ...defaultValues,
     ...(node as GraphNode),
     id: node.id.toString(),
   }
@@ -147,7 +149,7 @@ export const connectionExists = (edge: Edge, elements: Elements) =>
  */
 export const addEdge = (edgeParams: Edge | Connection, elements: Elements, defaults?: DefaultEdgeOptions) => {
   if (!edgeParams.source || !edgeParams.target) {
-    console.warn("Can't create edge. An edge needs a source and a target.")
+    console.warn("[vueflow]: Can't create edge. An edge needs a source and a target.")
     return elements
   }
 
@@ -172,14 +174,14 @@ export const addEdge = (edgeParams: Edge | Connection, elements: Elements, defau
  */
 export const updateEdge = (oldEdge: Edge, newConnection: Connection, elements: Elements) => {
   if (!newConnection.source || !newConnection.target) {
-    console.warn("Can't create new edge. An edge needs a source and a target.")
+    console.warn("[vueflow]: Can't create new edge. An edge needs a source and a target.")
     return elements
   }
 
   const foundEdge = elements.find((e) => isEdge(e) && e.id === oldEdge.id)
 
   if (!foundEdge) {
-    console.warn(`The old edge with id=${oldEdge.id} does not exist.`)
+    console.warn(`[vueflow]: The old edge with id=${oldEdge.id} does not exist.`)
     return elements
   }
 
@@ -193,12 +195,12 @@ export const updateEdge = (oldEdge: Edge, newConnection: Connection, elements: E
     targetHandle: newConnection.targetHandle,
   }
   elements.splice(elements.indexOf(foundEdge), 1, edge)
-  return elements.filter((e) => e.id !== oldEdge.id).concat(edge)
+  return elements.filter((e) => e.id !== oldEdge.id)
 }
 
 export const pointToRendererPoint = (
   { x, y }: XYPosition,
-  [tx, ty, tScale]: Transform,
+  { x: tx, y: ty, zoom: tScale }: Viewport,
   snapToGrid: boolean,
   [snapX, snapY]: [number, number],
 ) => {
@@ -218,7 +220,7 @@ export const pointToRendererPoint = (
 }
 
 export const onLoadProject = (currentStore: Store) => (position: XYPosition) =>
-  pointToRendererPoint(position, currentStore.transform, currentStore.snapToGrid, currentStore.snapGrid)
+  pointToRendererPoint(position, currentStore.viewport, currentStore.snapToGrid, currentStore.snapGrid)
 
 const getBoundsOfBoxes = (box1: Box, box2: Box): Box => ({
   x: Math.min(box1.x, box2.x),
@@ -259,12 +261,17 @@ export const getRectOfNodes = (nodes: GraphNode[]) => {
   return boxToRect(box)
 }
 
-export const graphPosToZoomedPos = ({ x, y }: XYPosition, [tx, ty, tScale]: Transform): XYPosition => ({
+export const graphPosToZoomedPos = ({ x, y }: XYPosition, { x: tx, y: ty, zoom: tScale }: Viewport): XYPosition => ({
   x: x * tScale + tx,
   y: y * tScale + ty,
 })
 
-export const getNodesInside = (nodes: GraphNode[], rect: Rect, [tx, ty, tScale]: Transform = [0, 0, 1], partially = false) => {
+export const getNodesInside = (
+  nodes: GraphNode[],
+  rect: Rect,
+  { x: tx, y: ty, zoom: tScale }: Viewport = { x: 0, y: 0, zoom: 1 },
+  partially = false,
+) => {
   const rBox = rectToBox({
     x: (rect.x - tx) / tScale,
     y: (rect.y - ty) / tScale,
@@ -307,8 +314,8 @@ export const onLoadToObject = (store: State) => (): FlowExportObject => {
     JSON.stringify({
       nodes: store.nodes,
       edges: store.edges,
-      position: [store.transform[0], store.transform[1]],
-      zoom: store.transform[2],
+      position: [store.viewport.x, store.viewport.y],
+      zoom: store.viewport.zoom,
     } as FlowExportObject),
   )
 }
@@ -324,7 +331,7 @@ export const getTransformForBounds = (
     x?: number
     y?: number
   } = { x: 0, y: 0 },
-): Transform => {
+): Viewport => {
   const xZoom = width / (bounds.width * (1 + padding))
   const yZoom = height / (bounds.height * (1 + padding))
   const zoom = Math.min(xZoom, yZoom)
@@ -334,14 +341,14 @@ export const getTransformForBounds = (
   const x = width / 2 - boundsCenterX * clampedZoom + (offset.x ?? 0)
   const y = height / 2 - boundsCenterY * clampedZoom + (offset.y ?? 0)
 
-  return [x, y, clampedZoom]
+  return { x, y, zoom: clampedZoom }
 }
 
-export const getXYZPos = (parentNode: GraphNode, computedPosition: XYZPosition): XYZPosition => {
+export const getXYZPos = (parentPos: XYZPosition, computedPosition: XYZPosition): XYZPosition => {
   return {
-    x: computedPosition.x + parentNode.computedPosition.x,
-    y: computedPosition.y + parentNode.computedPosition.y,
-    z: parentNode.computedPosition.z > computedPosition.z ? parentNode.computedPosition.z : computedPosition.z,
+    x: computedPosition.x + parentPos.x,
+    y: computedPosition.y + parentPos.y,
+    z: parentPos.z > computedPosition.z ? parentPos.z : computedPosition.z,
   }
 }
 

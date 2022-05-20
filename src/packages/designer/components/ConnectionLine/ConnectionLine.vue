@@ -17,16 +17,18 @@ const sourceHandle =
   store.connectionHandleId && store.connectionHandleType
     ? props.sourceNode.handleBounds[store.connectionHandleType]?.find((d: HandleElement) => d.id === store.connectionHandleId)
     : store.connectionHandleType && props.sourceNode.handleBounds[store.connectionHandleType ?? 'source']?.[0]
+
 const sourceHandleX = sourceHandle ? sourceHandle.x + sourceHandle.width / 2 : props.sourceNode.dimensions.width / 2
 const sourceHandleY = sourceHandle ? sourceHandle.y + sourceHandle.height / 2 : props.sourceNode.dimensions.height
+
 const sourceX = props.sourceNode.computedPosition.x + sourceHandleX
 const sourceY = props.sourceNode.computedPosition.y + sourceHandleY
 
 const isRightOrLeft = sourceHandle?.position === Position.Left || sourceHandle?.position === Position.Right
 const targetPosition = isRightOrLeft ? Position.Left : Position.Top
 
-const targetX = computed(() => (store.connectionPosition.x - store.transform[0]) / store.transform[2])
-const targetY = computed(() => (store.connectionPosition.y - store.transform[1]) / store.transform[2])
+const targetX = computed(() => (store.connectionPosition.x - store.viewport.x) / store.viewport.zoom)
+const targetY = computed(() => (store.connectionPosition.y - store.viewport.y) / store.viewport.zoom)
 
 const dAttr = computed(() => {
   let path = `M${sourceX},${sourceY} ${targetX.value},${targetY.value}`

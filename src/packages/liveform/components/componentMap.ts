@@ -1,4 +1,4 @@
-import { Text, TextArea, Checkbox, Select, Radio, Nested } from './inputs';
+import { Text, TextArea, Number, Checkbox, Select, Radio, Nested } from './inputs';
 
 const getComponent = (type: string) => {
     switch (type) {
@@ -7,7 +7,7 @@ const getComponent = (type: string) => {
         case 'date':
             return Text;
         case 'number':
-            return Text;
+            return Number;
         case 'password':
             return Text;
         case 'checkbox':

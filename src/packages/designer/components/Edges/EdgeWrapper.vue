@@ -1,13 +1,17 @@
 <script lang="ts" setup>
+import { CSSProperties } from 'vue'
 import { useHandle, useVueFlow } from '../../composables'
-import { ConnectionMode, EdgeComponent, GraphEdge, Position } from '../../types'
+import { ConnectionMode, EdgeComponent, GraphEdge, GraphNode, Position } from '../../types'
 import { getEdgePositions, getHandle, getMarkerId } from '../../utils'
 import { Slots } from '../../context'
-import EdgeAnchor from './EdgeAnchor.vue'
+//import EdgeAnchor from './EdgeAnchor.vue'
+import EdgeAnchor from './EdgeAnchor'
 
 interface EdgeWrapper {
   id: string
   edge: GraphEdge
+  sourceNode: GraphNode
+  targetNode: GraphNode
   selectable?: boolean
   updatable?: boolean
 }
@@ -42,6 +46,7 @@ const handleEdgeUpdater = (event: MouseEvent, isSourceHandle: boolean) => {
   const handleId = (isSourceHandle ? edge.value.targetHandle : edge.value.sourceHandle) ?? ''
 
   store.hooks.edgeUpdateStart.trigger({ event, edge: edge.value })
+
   onMouseDown(
     event,
     handleId,
@@ -54,22 +59,30 @@ const handleEdgeUpdater = (event: MouseEvent, isSourceHandle: boolean) => {
   )
 }
 
-const getClass = () => (edge.value.class instanceof Function ? edge.value.class(edge.value) : edge.value.class)
-const getStyle = () => (edge.value.style instanceof Function ? edge.value.style(edge.value) : edge.value.style)
-
 // when connection type is loose we can define all handles as sources
-const targetNodeHandles = computed(() =>
-  store.connectionMode === ConnectionMode.Strict
-    ? edge.value.targetNode.handleBounds.target
-    : edge.value.targetNode.handleBounds.target ?? edge.value.targetNode.handleBounds.source,
-)
+const targetNodeHandles = computed(() => {
+  if (store.connectionMode === ConnectionMode.Strict) {
+    return props.targetNode.handleBounds.target
+  }
 
-const sourceHandle = controlledComputed(
-  () => edge.value.sourceNode.handleBounds,
-  () => getHandle(edge.value.sourceNode.handleBounds.source, edge.value.sourceHandle),
-)
+  const targetBounds = props.targetNode.handleBounds.target
+  const sourceBounds = props.targetNode.handleBounds.source
+  return targetBounds ?? sourceBounds
+})
 
+const sourceNodeHandles = computed(() => {
+  if (store.connectionMode === ConnectionMode.Strict) {
+    return props.sourceNode.handleBounds.source
+  }
+
+  const targetBounds = props.sourceNode.handleBounds.target
+  const sourceBounds = props.sourceNode.handleBounds.source
+  return sourceBounds ?? targetBounds
+})
+
+const sourceHandle = computed(() => getHandle(sourceNodeHandles.value, edge.value.sourceHandle))
 const targetHandle = computed(() => getHandle(targetNodeHandles.value, edge.value.targetHandle))
+
 const sourcePosition = computed(() => (sourceHandle.value ? sourceHandle.value.position : Position.Bottom))
 const targetPosition = computed(() => (targetHandle.value ? targetHandle.value.position : Position.Top))
 
@@ -80,19 +93,19 @@ onMounted(() => {
     [
       sourcePosition,
       targetPosition,
-      () => edge.value.sourceNode.position,
-      () => edge.value.targetNode.position,
-      () => edge.value.sourceNode.computedPosition,
-      () => edge.value.targetNode.computedPosition,
-      () => edge.value.sourceNode.dimensions,
-      () => edge.value.targetNode.dimensions,
+      () => props.sourceNode.position,
+      () => props.targetNode.position,
+      () => props.sourceNode.computedPosition,
+      () => props.targetNode.computedPosition,
+      () => props.sourceNode.dimensions,
+      () => props.targetNode.dimensions,
     ],
     () => {
       const { sourceX, sourceY, targetY, targetX } = getEdgePositions(
-        edge.value.sourceNode,
+        props.sourceNode,
         sourceHandle.value,
         sourcePosition.value,
-        edge.value.targetNode,
+        props.targetNode,
         targetHandle.value,
         targetPosition.value,
       )
@@ -114,8 +127,9 @@ watch(
 )
 
 const type = computed(() => {
+  let edgeType = edge.value.template ?? store.getEdgeTypes[name.value]
   const instance = getCurrentInstance()
-  let edgeType = store.getEdgeTypes[name.value]
+
   if (typeof edgeType === 'string') {
     if (instance) {
       const components = Object.keys(instance.appContext.components)
@@ -135,6 +149,24 @@ const type = computed(() => {
 
   return slot
 })
+
+const getClass = computed(() => {
+  const extraClass = edge.value.class instanceof Function ? edge.value.class(edge.value) : edge.value.class
+  return [
+    'vue-flow__edge',
+    `vue-flow__edge-${name.value}`,
+    store.noPanClassName,
+    {
+      selected: edge.value.selected,
+      animated: edge.value.animated,
+      inactive: !props.selectable,
+      updating: updating.value,
+    },
+    extraClass,
+  ]
+})
+
+const getStyle = () => (edge.value.style instanceof Function ? edge.value.style(edge.value) : edge.value.style) as CSSProperties
 </script>
 <script lang="ts">
 export default {
@@ -143,71 +175,57 @@ export default {
 }
 </script>
 <template>
-  <g
-    :key="`edge-${edge.id}`"
-    :class="[
-      'vue-flow__edge',
-      `vue-flow__edge-${name}`,
-      store.noPanClassName,
-      {
-        selected: edge.selected,
-        animated: edge.animated,
-        inactive: !props.selectable,
-        updating,
-      },
-      getClass(),
-    ]"
-    @click="onEdgeClick"
-    @dblClick="onDoubleClick"
-    @contextmenu="onEdgeContextMenu"
-    @mouseenter="onEdgeMouseEnter"
-    @mousemove="onEdgeMouseMove"
-    @mouseleave="onEdgeMouseLeave"
-  >
-    <component
-      :is="type"
-      :id="edge.id"
-      :source-node="edge.sourceNode"
-      :target-node="edge.targetNode"
-      :source="edge.source"
-      :target="edge.target"
-      :updatable="props.updatable"
-      :selected="edge.selected"
-      :animated="edge.animated"
-      :label="edge.label"
-      :label-style="edge.labelStyle"
-      :label-show-bg="edge.labelShowBg"
-      :label-bg-style="edge.labelBgStyle"
-      :label-bg-padding="edge.labelBgPadding"
-      :label-bg-border-radius="edge.labelBgBorderRadius"
-      :data="edge.data"
-      :style="getStyle()"
-      :marker-start="`url(#${getMarkerId(edge.markerStart)})`"
-      :marker-end="`url(#${getMarkerId(edge.markerEnd)})`"
-      :source-position="sourcePosition"
-      :target-position="targetPosition"
-      :source-x="edge.sourceX"
-      :source-y="edge.sourceY"
-      :target-x="edge.targetX"
-      :target-y="edge.targetY"
-      :source-handle-id="edge.sourceHandle"
-      :target-handle-id="edge.targetHandle"
-    />
-    <g
-      v-if="props.updatable"
-      @mousedown="onEdgeUpdaterSourceMouseDown"
-      @mouseenter="onEdgeUpdaterMouseEnter"
-      @mouseout="onEdgeUpdaterMouseOut"
-    >
-      <EdgeAnchor :position="sourcePosition" :center-x="edge.sourceX" :center-y="edge.sourceY" :radius="edgeUpdaterRadius" />
+  <g :class="getClass"
+     @click="onEdgeClick"
+     @dblClick="onDoubleClick"
+     @contextmenu="onEdgeContextMenu"
+     @mouseenter="onEdgeMouseEnter"
+     @mousemove="onEdgeMouseMove"
+     @mouseleave="onEdgeMouseLeave">
+    <component :is="type"
+               :id="edge.id"
+               :source-node="props.sourceNode"
+               :target-node="props.targetNode"
+               :source="edge.source"
+               :target="edge.target"
+               :updatable="props.updatable"
+               :selected="edge.selected"
+               :animated="edge.animated"
+               :label="edge.label"
+               :label-style="edge.labelStyle"
+               :label-show-bg="edge.labelShowBg"
+               :label-bg-style="edge.labelBgStyle"
+               :label-bg-padding="edge.labelBgPadding"
+               :label-bg-border-radius="edge.labelBgBorderRadius"
+               :data="edge.data"
+               :style="getStyle()"
+               :marker-start="`url(#${getMarkerId(edge.markerStart)})`"
+               :marker-end="`url(#${getMarkerId(edge.markerEnd)})`"
+               :source-position="sourcePosition"
+               :target-position="targetPosition"
+               :source-x="edge.sourceX"
+               :source-y="edge.sourceY"
+               :target-x="edge.targetX"
+               :target-y="edge.targetY"
+               :source-handle-id="edge.sourceHandle"
+               :target-handle-id="edge.targetHandle" />
+    <g v-if="props.updatable"
+       @mousedown="onEdgeUpdaterSourceMouseDown"
+       @mouseenter="onEdgeUpdaterMouseEnter"
+       @mouseout="onEdgeUpdaterMouseOut">
+      <EdgeAnchor :position="sourcePosition"
+                  :center-x="edge.sourceX"
+                  :center-y="edge.sourceY"
+                  :radius="edgeUpdaterRadius" />
     </g>
-    <g
-      v-if="props.updatable"
-      @mousedown="onEdgeUpdaterTargetMouseDown"
-      @mouseenter="onEdgeUpdaterMouseEnter"
-      @mouseout="onEdgeUpdaterMouseOut"
-    >
-      <EdgeAnchor :position="targetPosition" :center-x="edge.targetX" :center-y="edge.targetY" :radius="edgeUpdaterRadius" />
+    <g v-if="props.updatable"
+       @mousedown="onEdgeUpdaterTargetMouseDown"
+       @mouseenter="onEdgeUpdaterMouseEnter"
+       @mouseout="onEdgeUpdaterMouseOut">
+      <EdgeAnchor :position="targetPosition"
+                  :center-x="edge.targetX"
+                  :center-y="edge.targetY"
+                  :radius="edgeUpdaterRadius" />
     </g>
   </g>
 </template>

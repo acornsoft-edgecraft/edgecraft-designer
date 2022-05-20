@@ -1,51 +1,62 @@
 <script lang="ts" setup>
-import { DraggableCore, DraggableEventListener } from "~/packages/draggable";
-import { useVueFlow } from "~/packages/designer/composables";
-import { getRectOfNodes } from "~/packages/designer/utils";
+import { useDraggableCore } from '~/packages/draggable'
+import { useVueFlow } from '../../composables'
+import { getRectOfNodes } from '../../utils'
 
-const { id, store } = useVueFlow();
-const selectedNodesBBox = computed(() => getRectOfNodes(store.getSelectedNodes));
+const { store } = useVueFlow()
+
+const el = templateRef<HTMLDivElement>('el', null)
+
+const selectedNodesBBox = computed(() => getRectOfNodes(store.getSelectedNodes))
+
 const innerStyle = computed(() => ({
   width: `${selectedNodesBBox.value.width}px`,
   height: `${selectedNodesBBox.value.height}px`,
   top: `${selectedNodesBBox.value.y}px`,
   left: `${selectedNodesBBox.value.x}px`,
-}));
-watch(selectedNodesBBox, (v) => (store.selectedNodesBbox = v));
-const onStart: DraggableEventListener = ({ event }) => store.hooks.selectionDragStart.trigger({ event, nodes: store.getSelectedNodes });
-const onDrag: DraggableEventListener = ({ event, data: { deltaX, deltaY } }) => {
-  nextTick(() => {
-    store.hooks.selectionDrag.trigger({ event, nodes: store.getSelectedNodes });
-    store.updateNodePosition({ diff: { x: deltaX, y: deltaY }, dragging: true });
-  });
-};
-const onStop: DraggableEventListener = ({ event }) => {
-  store.hooks.selectionDragStop.trigger({ event, nodes: store.getSelectedNodes });
-  store.getSelectedNodes.forEach((node) => (node.dragging = false));
-};
-const onContextMenu = (event: MouseEvent) => store.hooks.selectionContextMenu.trigger({ event, nodes: store.getSelectedNodes });
+}))
 
-const transform = computed(() => `translate(${store.transform[0]}px,${store.transform[1]}px) scale(${store.transform[2]})`);
-const scale = controlledComputed(
-  () => store.transform[2],
-  () => store.transform[2]
-);
-const scaleDebounced = debouncedRef(scale, 5);
+const transform = computed(() => `translate(${store.viewport.x}px,${store.viewport.y}px) scale(${store.viewport.zoom})`)
 
-const el = templateRef<HTMLDivElement>("el", null);
+watch(selectedNodesBBox, (v) => (store.selectedNodesBbox = v))
+
+const onContextMenu = (event: MouseEvent) => store.hooks.selectionContextMenu.trigger({ event, nodes: store.getSelectedNodes })
+
+const { onDragStart, onDrag, onDragStop, scale } = useDraggableCore(el, {
+  grid: store.snapToGrid ? store.snapGrid : undefined,
+  enableUserSelectHack: false,
+  scale: store.viewport.zoom,
+})
+
 onMounted(() => {
-  el.value.click();
-});
+  debouncedWatch(
+    () => store.viewport.zoom,
+    () => {
+      scale.value = store.viewport.zoom
+    },
+    { debounce: 5 },
+  )
+})
+
+onDragStart(({ event }) => store.hooks.selectionDragStart.trigger({ event, nodes: store.getSelectedNodes }))
+
+onDrag(({ event, data: { deltaX, deltaY } }) => {
+  store.hooks.selectionDrag.trigger({ event, nodes: store.getSelectedNodes })
+  store.updateNodePosition({ diff: { x: deltaX, y: deltaY }, dragging: true })
+})
+
+onDragStop(({ event }) => {
+  store.hooks.selectionDragStop.trigger({ event, nodes: store.getSelectedNodes })
+  store.getSelectedNodes.forEach((node) => (node.dragging = false))
+})
 </script>
 <script lang="ts">
 export default {
-  name: "NodesSelection",
-};
+  name: 'NodesSelection',
+}
 </script>
 <template>
-  <div ref="el" class="vue-flow__nodesselection vue-flow__container" :class="store.noPanClassName" :style="{ transform }">
-    <DraggableCore :grid="store.snapToGrid ? store.snapGrid : undefined" :enable-user-select-hack="false" :scale="scaleDebounced" @start="onStart" @move="onDrag" @stop="onStop">
-      <div class="vue-flow__nodesselection-rect" :style="innerStyle" @contextmenu="onContextMenu" />
-    </DraggableCore>
+  <div class="vue-flow__nodesselection vue-flow__container" :class="store.noPanClassName" :style="{ transform }">
+    <div ref="el" class="vue-flow__nodesselection-rect" :style="innerStyle" @contextmenu="onContextMenu" />
   </div>
 </template>

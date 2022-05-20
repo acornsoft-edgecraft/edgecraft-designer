@@ -1,18 +1,21 @@
 <template>
-	<label>
-		<input v-model="modelValue[config.field!]" :readonly="config.readonly" type="checkbox" @change="emitChange" />
-	</label>
+	<K3Checkbox v-model="checked"
+				:binary="true"
+				:disabled="readonly"
+				@change="emitChange" />
 </template>
+
 <script setup lang="ts">
 import { defineProps, defineEmits, PropType } from '@vue/runtime-core';
 import type { RowType } from '../../types/Types';
 
 const emit = defineEmits(['change']);
 let emitChange = () => {
+	props.modelValue[props.config.field!] = checked.value
 	emit('change');
 };
 
-defineProps({
+const props = defineProps({
 	modelValue: {
 		type: Object,
 		required: true,
@@ -21,17 +24,18 @@ defineProps({
 		type: Object as PropType<RowType>,
 		required: true,
 	},
+	readonly: {
+		type: Boolean,
+		required: true,
+	}
 });
+
+const checked = ref(props.modelValue[props.config.field!])
 </script>
+
 <style lang="scss" scoped>
-label {
-	width: 100%;
-	height: 100%;
-	position: absolute;
-	top: 0;
-	left: 0;
-	display: flex;
-	justify-content: flex-start;
-	align-items: center;
+.p-checkbox-box {
+	font-size: .875rem;
+	padding: 0.15rem;
 }
 </style>
