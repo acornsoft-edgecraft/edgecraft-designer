@@ -44,17 +44,18 @@ export const CloudDataRows = [
         label: 'External ETCD'
     },
     {
-        type: 'checkbox',
+        type: 'cidr',
         readonly: false,
-        field: 'useExternalLB',
-        label: 'External L/B'
+        field: 'serviceCIDR',
+        label: 'Serice CIDR',
     },
     {
-        type: 'checkbox',
+        type: 'cidr',
         readonly: false,
-        field: 'useRegistry',
-        label: 'Use Registry'
-    }
+        field: 'podCIDR',
+        label: 'Pod CIDR',
+    },
+
 
     // {
     //     type: 'radio',

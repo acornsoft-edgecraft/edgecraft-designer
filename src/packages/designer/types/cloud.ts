@@ -20,20 +20,27 @@ export enum CloudType {
     Openstack = 'openstack',
 }
 
+export enum WorkerRoles {
+    Worker = 'worker',              // k8s worker node
+    Controller = 'controller',      // openstack controller node
+    Network = 'network',            // openstack network node
+    Compute = 'compute',            // openstack compute node (for vm instances)
+}
+
 /**
  * Cluster 기준 정보
  */
 
 // - Master Count (마스터 갯수로 HA 판단)
 // - Worker Count (Worker 노드를 특정한 용도로 사용하는 경우는?)
-// - Stacked ETCD 여부 (마스터마다 ETCD 구성)
-// - External ETCD 여부 (별도 ETCD 클러스터 구성)
+// - External ETCD 여부 (별도 ETCD 클러스터 구성, false인 경우 stacked)
 //   - ETCD IP (개별 지정? 아니면 규칙)
-// - External Storage 여부
-//   - Storage IP (개별 지정? 아니면 규칙)
-// - Registry 여부
+// - External Storage 여부  (연결 정보로 식별)
+//   - Storage IP
+// - Registry 여부  (연결 정보로 식별)
 //   - Registry IP
 // - Network 구성 정보
+//   - service CIDR
 //   - Pod CIDR
 
 /**
@@ -69,7 +76,7 @@ export interface NodeData {
 }
 
 export interface MemberNodeData extends NodeData {
-    ipAddress: String
+    privateAddr: String
 }
 
 export interface MasterNodeData extends MemberNodeData {
@@ -77,16 +84,16 @@ export interface MasterNodeData extends MemberNodeData {
 }
 
 export interface WorkerNodeData extends MemberNodeData {
-
+    workerRole: WorkerRoles     // TODO: role change 검증 (존재 여부 등)
 }
 
 export interface ClusterData extends NodeData {
     cloudType: CloudType
     masterCount: Number
-    workerCount: Number
-    useExternalETCD: Boolean
-    useExternalLB: Boolean
-    useRegistry: Boolean
+    workerCount: Number         // TODO: openstack 갯수 감안 (필수 여부)
+    useExternalETCD: Boolean    // false 인 경우는 stacked
+    serviceCIDR: String
+    podCIDR: String
 }
 
 export const getDefaultCloudData = (options?: Partial<ClusterData>): ClusterData => {
@@ -96,8 +103,8 @@ export const getDefaultCloudData = (options?: Partial<ClusterData>): ClusterData
         masterCount: 1,
         workerCount: 3,
         useExternalETCD: false,
-        useExternalLB: true,
-        useRegistry: true
+        serviceCIDR: '192.168.1.0/24',
+        podCIDR: '192.168.2.0/24'
     }
 
     return {

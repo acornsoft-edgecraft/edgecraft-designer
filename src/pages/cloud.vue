@@ -253,14 +253,10 @@ const onDrop = (event: DragEvent) => {
       nextTick(() => {
         switch (type) {
           case 'cloud':
-            // Cluster에 연계할 Registry 추가 여부
-            if (data.useRegistry) {
-              addExternalNodesForCluster(ClusterComponentTypes.Registry, _id, position)
-            }
-            // Cluster에 연계할 External L/B 추가 여부
-            if (data.useExternalLB) {
-              addExternalNodesForCluster(ClusterComponentTypes.LoadBalancer, _id, position)
-            }
+            // Cluster에 연계할 Registry 추가
+            addExternalNodesForCluster(ClusterComponentTypes.Registry, _id, position)
+            // Cluster에 연계할 External L/B 추가
+            addExternalNodesForCluster(ClusterComponentTypes.LoadBalancer, _id, position)
             break;
         }
       })
