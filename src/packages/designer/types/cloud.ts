@@ -107,6 +107,7 @@ export const getDefaultCloudData = (options?: Partial<ClusterData>): ClusterData
         cloudType: CloudType.Baremetal,
         masterCount: 1,
         workerCount: 3,
+        
         useExternalETCD: false,
         serviceCIDR: '192.168.1.0/24',
         podCIDR: '192.168.2.0/24'

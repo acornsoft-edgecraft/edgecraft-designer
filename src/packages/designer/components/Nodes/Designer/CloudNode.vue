@@ -36,14 +36,6 @@ let isMasterHA = false;
 
 const { masters, workers, haProxy, etcdCluster, arrangeMembers } = useCloudHelper(store, props.id)
 
-// const masters = computed(() => store.nodes.filter(n => n.type === ClusterComponentTypes.Master && n.parentNode === node.id))
-// const workers = computed(() => store.nodes.filter(n => n.type === ClusterComponentTypes.Worker && n.parentNode === node.id))
-// const haProxy = computed(() => store.getNodes.filter(n => n.type === ClusterComponentTypes.LoadBalancer && n.parentNode === node.id)[0]!)
-// const etcdCluster = computed(() => store.getNodes.filter(n => n.type === ClusterComponentTypes.ETCDCluster && n.parentNode === node.id)[0]!)
-
-//const rootMaster = computed(() => store.nodes.filter(n => n.type === ClusterComponentTypes.Master && n.id.endsWith('0'))[0])
-//const hasInternalLB = computed(() => store.nodes.some(n => n.type === ClusterComponentTypes.LoadBalancer))
-
 watch(() => props.data.masterCount, (newVal, oldVal) => {
     if (newVal < 1) {
         // TODO: Message 처리
@@ -78,31 +70,6 @@ watch(() => props.data.workerCount, (newVal, oldVal) => {
 
     nextTick(() => { arrangeMembers() })
 })
-
-// const removeNodes = (nodeCount, isMaster = false) => {
-//   const nodeChanges: NodeChange[] = store.getNodes.filter(item => item.parentNode === node.id && (isMaster ? item.type === ClusterComponentTypes.Master : item.type !== ClusterComponentTypes.Master)).map(item => ({ id: item.id, type: 'remove' }));
-//   store.hooks.nodesChange.trigger(nodeChanges)
-// }
-// const addNodes = (nodeCount, isMaster = false) => {
-//   const newNodes = []s
-//   const nodeName = isMaster ? ClusterComponentTypes.Master : ClusterComponentTypes.Worker
-//   for (let i = 0; i < nodeCount; i++) {
-//     //TODO: Master/Worker, ... 구분 처리
-//     //TODO: Position 배분 및 정리
-//     //TODO: Cluster Sizing (Dimension) 처리
-//     newNodes.push({
-//       id: `${nodeName}_${i}`,
-//       type: isMaster ? ClusterComponentTypes.Master : ClusterComponentTypes.Worker,
-//       //position: instance.value.project({ x: node.computedPosition.x - 200, y: node.computedPosition.y + (i * 35) - 80 }),
-//       position: getNodePosition(isMaster, i), // { x: 20, y: (i * 40) + 50 },
-//       label: `${nodeName} Node #${i}`,
-//       parentNode: node.id,
-//       resizeParent: true,
-//       data: getNodeData(isMaster),
-//     } as Node);
-//   }
-//   store.addNodes(newNodes);
-// }
 
 const getNodeData = (type: ClusterComponentTypes, label: string) => {
     let data = {} as any;
@@ -175,16 +142,6 @@ const getIdLabel = (type: ClusterComponentTypes, seq: number) => {
         id = `${nodeName}_${seq}`
         label = `${nodeName} Node #${seq}`
     }
-
-    // if (allowTypes.includes(type)) {
-    //     const seq = ids.get(type)
-    //     id = `${nodeName}_${seq}`
-    //     ids.set(type, seq + 1)
-    //     label = nodeName
-    // } else {
-    //     id = `${nodeName}_${seq}`
-    //     label = `${nodeName} Node #${seq}`
-    // }
 
     return { id, label }
 }
@@ -332,13 +289,6 @@ const addEdges = (type: ClusterComponentTypes, nodeCount: number) => {
 }
 
 /**
- * 추가된 Node의 상황에 따라 기존에 존재하는 노드들 이동 처리
- */
-const moveNodes = () => {
-
-}
-
-/**
  * 지정한 노드 유형에 따라 추가/삭제의 관련 노드들 처리
  * @param type 처리할 노드 유형
  * @param nodeCount 추가할 노드 갯수
@@ -354,28 +304,6 @@ const processNodes = (type: ClusterComponentTypes, nodeCount: number = 1, isRemo
         addEdges(type, nodeCount)
     }
 }
-
-// const checkNodeCondition = (type: ClusterComponentTypes): boolean => {
-//     if (!allowTypes.includes(type)) {
-//         // TODO: 메시지 처리 필요
-//         alert('Not Supported');
-//         return false;
-//     }
-
-//     // switch (type) {
-//     //     case ClusterComponentTypes.LoadBalancer:
-//     //         if (hasInternalLB.value) {
-//     //             alert('내부에 한개 이상의 LB를 가질 수 없습니다.')
-//     //             return false;
-//     //         }
-//     //         if (!isMasterHA.value) {
-//     //             alert('Master HA 구성이 필요합니다.')
-//     //             return false;
-//     //         }
-//     // }
-
-//     return true
-// }
 
 const onDrop = (event: DragEvent) => {
     event.stopPropagation();
