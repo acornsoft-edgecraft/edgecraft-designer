@@ -4,7 +4,7 @@ export interface SchemaType {
 }
 
 export interface RowType {
-    type: 'text' | 'password' | 'checkbox' | 'boolean' | 'textarea' | 'textbox' | 'select' | 'radio' | 'nested' | 'date' | 'number' | 'mask' | 'cidr';
+    type: 'text' | 'password' | 'checkbox' | 'boolean' | 'textarea' | 'textbox' | 'select' | 'radio' | 'nested' | 'date' | 'number' | 'mask' | 'cidr' | 'ipaddr';
     readonly?: boolean | Array<any>;
     field: string
     options?: string | Array<any>

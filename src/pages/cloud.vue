@@ -28,7 +28,8 @@
             </div>
             <div class="property-pane flex-none">
               <K3DesignerProperty :schema="schema"
-                                  :data="data"
+                                  v-model="data"
+                                  keyField="name"
                                   @change="onPropsChanged" />
             </div>
           </section>
@@ -47,9 +48,9 @@
 </template>
 
 <script setup lang="ts">
-import { VueFlow, MiniMap, Controls, Background, Node, Edge, FlowEvents, FlowInstance, useVueFlow, XYPosition, SmoothStepEdge, CloudType, ClusterComponentTypes, getDefaultCloudData, updateEdge } from "~/packages/designer";
+import { VueFlow, MiniMap, Controls, Background, Node, Edge, FlowEvents, FlowInstance, useVueFlow, XYPosition, SmoothStepEdge, CloudType, ClusterComponentTypes, getDefaultCloudData, updateEdge, Position, getDefaultLoadBalancerData, getDefaultMasterData, getDefaultWorkerData, getDefaultRegistryData, getDefaultStorageServerData, getDefaultStorageClusterData, getDefaultETCDClusterData } from "~/packages/designer";
 import { getMousePosition } from "~/packages/designer/components/UserSelection/utils";
-import { CloudDataRows, MasterDataRows, WorkerDataRows, RegistryDataRows, LoadbalancerDataRows } from "~/models/designer";
+import { CloudDataRows, MasterDataRows, WorkerDataRows, RegistryDataRows, LoadbalancerDataRows, StorageClusterDataRows, StorageServerDataRows, ETCDClusterDataRows } from "~/models/designer";
 import { SchemaType, RowType } from "~/packages/liveform";
 const { instance, onConnect, store, } = useVueFlow({
   fitViewOnInit: true,
@@ -113,9 +114,39 @@ const getNodeInfo = (nodeType: string) => {
       style.width = '200px';
       style.height = '200px';
       break;
-    case 'loadbalancer':
-      type = ClusterComponentTypes.LoadBalancer;
-      label = `External`;
+    case ClusterComponentTypes.Master:
+      label = 'Master';
+      data = getDefaultMasterData()
+      data.name = label;
+      break;
+    case ClusterComponentTypes.Worker:
+      label = `Worker`;
+      data = getDefaultWorkerData()
+      data.name = label;
+      break;
+    case ClusterComponentTypes.LoadBalancer:
+      label = `Loadbalancer`;
+      data = getDefaultLoadBalancerData()
+      data.name = label;
+      break;
+    case ClusterComponentTypes.Registry:
+      label = `Registry`;
+      data = getDefaultRegistryData()
+      data.name = label;
+      break;
+    case ClusterComponentTypes.StorageServer:
+      label = `Storage Server`;
+      data = getDefaultStorageServerData()
+      data.name = label;
+      break;
+    case ClusterComponentTypes.StorageCluster:
+      label = `Storage Cluster`;
+      data = getDefaultStorageClusterData()
+      data.name = label;
+      break;
+    case ClusterComponentTypes.ETCDCluster:
+      label = `ETCD Cluster`;
+      data = getDefaultETCDClusterData()
       data.name = label;
       break;
     default:
@@ -142,6 +173,10 @@ const addExternalNodesForCluster = (type: ClusterComponentTypes, clusterId: stri
           xPos += pos.x + (clusterNode.dimensions.width / 2) - xGap
           yPos += pos.y + clusterNode.dimensions.height + yGap
           break;
+        case ClusterComponentTypes.StorageCluster:
+          xPos += pos.x + (clusterNode.dimensions.width / 2) - xGap
+          yPos += pos.y + clusterNode.dimensions.height + yGap
+          break;
       }
 
     }
@@ -157,16 +192,19 @@ const addExternalNodesForCluster = (type: ClusterComponentTypes, clusterId: stri
 
   switch (type) {
     case ClusterComponentTypes.Registry:
-      newNode.data = {}
+      newNode.data = getDefaultRegistryData()
       break;
     case ClusterComponentTypes.LoadBalancer:
-      newNode.data = {}
+      newNode.data = getDefaultLoadBalancerData()
+      break;
+    case ClusterComponentTypes.StorageCluster:
+      newNode.data = getDefaultStorageClusterData()
       break;
   }
 
   store.addNodes([newNode])
 
-  // add edges
+  // add edges (source is node, target is cloud)
   nextTick(() => {
     const node = store.nodes.filter(n => n.id === newNode.id)[0]!
     if (node) {
@@ -179,16 +217,10 @@ const addExternalNodesForCluster = (type: ClusterComponentTypes, clusterId: stri
           }
           break;
         case ClusterComponentTypes.LoadBalancer:
+        case ClusterComponentTypes.StorageCluster:
           if (!store.edges.some(e => (e.sourceNode === node && e.targetNode === clusterNode) || (e.sourceNode === clusterNode && e.targetNode === node))) {
             newEdges.push({ id, source: node.id, target: clusterNode.id, sourceHandle: 'top', targetHandle: 'bottom' })
           }
-          // const workers = store.nodes.filter(n => n.parentNode === clusterNode.id && n.type === ClusterComponentTypes.Worker)
-          // workers.forEach(w => {
-          //   const id = `${node.id}-${w.id}`
-          //   if (!store.edges.some(e => (e.sourceNode === w && e.targetNode === node) || (e.sourceNode === node && e.targetNode === w))) {
-          //     newEdges.push({ id, source: node.id, target: w.id, sourceHandle: 'top', targetHandle: 'bottom' })
-          //   }
-          // })
           break;
       }
 
@@ -200,6 +232,7 @@ const addExternalNodesForCluster = (type: ClusterComponentTypes, clusterId: stri
 const onClick = () => {
   if (store.getSelectedNodes.length > 0) {
     const node = store.getSelectedNodes[0];
+    data.value = undefined;
     switch (node.type) {
       case ClusterComponentTypes.Master:
         schema.value.rows = MasterDataRows as ReadonlyArray<RowType>;
@@ -212,6 +245,15 @@ const onClick = () => {
         break;
       case ClusterComponentTypes.LoadBalancer:
         schema.value.rows = LoadbalancerDataRows as ReadonlyArray<RowType>;
+        break;
+      case ClusterComponentTypes.StorageCluster:
+        schema.value.rows = StorageClusterDataRows as ReadonlyArray<RowType>;
+        break;
+      case ClusterComponentTypes.StorageServer:
+        schema.value.rows = StorageServerDataRows as ReadonlyArray<RowType>;
+        break;
+      case ClusterComponentTypes.ETCDCluster:
+        schema.value.rows = ETCDClusterDataRows as ReadonlyArray<RowType>;
         break;
       case 'cloud':
         schema.value.rows = CloudDataRows as ReadonlyArray<RowType>;
@@ -257,6 +299,11 @@ const onDrop = (event: DragEvent) => {
             addExternalNodesForCluster(ClusterComponentTypes.Registry, _id, position)
             // Cluster에 연계할 External L/B 추가
             addExternalNodesForCluster(ClusterComponentTypes.LoadBalancer, _id, position)
+            // Openstack Case
+            if (data.cloudType === CloudType.Openstack) {
+              // Cluster에 연계할 Ceph Storage Cluster 추가
+              addExternalNodesForCluster(ClusterComponentTypes.StorageCluster, _id, position)
+            }
             break;
         }
       })

@@ -43,8 +43,6 @@ export default (store: Store, clusterId: string) => {
             m.position.x = itemPos.x
             m.position.y = itemPos.y
 
-            console.log(`arrange master >> Height: ${m.dimensions.height}`)
-
             if (itemPos.maxHeight < m.dimensions.height) itemPos.maxHeight = m.dimensions.height
             itemPos.x += m.dimensions.width + pos.xGap
             //store.updateNodePosition({ id: m.id })
@@ -82,32 +80,51 @@ export default (store: Store, clusterId: string) => {
 
     const adjustSiblings = () => {
         const nodeGap = 50;
-        const edges = store.edges.filter(e => e.sourceNode === clusterNode.value || e.targetNode === clusterNode.value);
+        const arrangeNodes = { x: [], y: [] }
+        const edges = store.edges.filter(e => e.targetNode === clusterNode.value);
         edges.forEach(e => {
-            const targetInfo = { node: null, position: Position.Right }
-            if (e.sourceNode === clusterNode.value) {
-                targetInfo.node = e.targetNode
-                targetInfo.position = e.sourceHandle as Position
-            } else {
-                targetInfo.node = e.sourceNode
-                targetInfo.position = e.targetHandle as Position
-            }
+            const targetInfo = { node: e.sourceNode, clusterPosition: e.targetHandle as Position }
 
-            switch (targetInfo.position) {
+            switch (targetInfo.clusterPosition) {
                 case Position.Top:
                     targetInfo.node.position.y = clusterNode.value.position.y - nodeGap;
+                    arrangeNodes.x.push(targetInfo.node)
                     break;
                 case Position.Right:
                     targetInfo.node.position.x = clusterNode.value.position.x + clusterNode.value.dimensions.width + nodeGap;
+                    arrangeNodes.y.push(targetInfo.node)
                     break;
                 case Position.Bottom:
                     targetInfo.node.position.y = clusterNode.value.position.y + clusterNode.value.dimensions.height + nodeGap;
+                    arrangeNodes.x.push(targetInfo.node)
                     break;
                 case Position.Left:
                     targetInfo.node.position.x = clusterNode.value.position.x - nodeGap;
+                    arrangeNodes.y.push(targetInfo.node)
                     break;
             }
         })
+
+        if (arrangeNodes.x.length > 0) {
+            const totalWidth = arrangeNodes.x.reduce((partSum, x) => partSum + x.dimensions.width, 0)
+            const xGap = (clusterNode.value.dimensions.width - totalWidth) / (arrangeNodes.x.length + 1)
+            let pos = clusterNode.value.position.x
+            arrangeNodes.x.forEach((x, i) => {
+                pos += xGap
+                x.position.x = pos
+                pos += x.dimensions.width
+            })
+        }
+        if (arrangeNodes.y.length > 0) {
+            const totalHeight = arrangeNodes.y.reduce((partSum, y) => partSum + y.dimensions.height, 0)
+            const yGap = (clusterNode.value.dimensions.height - totalHeight) / (arrangeNodes.y.length + 1)
+            let pos = clusterNode.value.position.y
+            arrangeNodes.y.forEach((y, i) => {
+                pos += yGap
+                y.position.y = pos
+                pos += y.dimensions.height
+            })
+        }
     }
 
     return {

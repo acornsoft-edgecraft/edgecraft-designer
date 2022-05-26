@@ -1,3 +1,4 @@
+import { ElementData } from './flow'
 /**
  * For Cloud
  */
@@ -71,21 +72,25 @@ export enum WorkerRoles {
  * Registry Node 기준 정보
  */
 
-export interface NodeData {
+export interface NodeData extends ElementData {
     name: String
 }
 
-export interface MemberNodeData extends NodeData {
+export interface MemberData extends NodeData {
     privateAddr: String
 }
 
-export interface MasterNodeData extends MemberNodeData {
+export interface MasterData extends MemberData { }
 
-}
-
-export interface WorkerNodeData extends MemberNodeData {
+export interface WorkerData extends MemberData {
     workerRole: WorkerRoles     // TODO: role change 검증 (존재 여부 등)
 }
+
+export interface RegistryData extends MemberData { }
+export interface StorageServerData extends MemberData { }
+export interface StorageClusterData extends MemberData { }
+export interface ETCDClusterData extends MemberData { }
+export interface LoadBalancerData extends MemberData { }
 
 export interface ClusterData extends NodeData {
     cloudType: CloudType
@@ -113,37 +118,71 @@ export const getDefaultCloudData = (options?: Partial<ClusterData>): ClusterData
     };
 }
 
-// export enum CNodeRoles {
-//     Worker = 'worker',
-//     Storage = 'storage',
-// }
+export const getDefaultMasterData = (options?: Partial<MasterData>): MasterData => {
+    const defaults = {
+        name: 'Master',
+        hasETCD: true,
+        privateAddr: '',
+    }
 
-// export interface NodeData {
-//     name: String
-// }
+    return { ...defaults, ...options }
+}
 
-// export interface CNodeData extends NodeData {
-//     name: String        // ex. Master1, Worker1, ...
-//     role: CNodeRoles
-// }
+export const getDefaultWorkerData = (options?: Partial<WorkerData>): WorkerData => {
+    const defaults = {
+        name: 'Worker',
+        privateAddr: '',
+        workerRole: WorkerRoles.Worker,
+    }
 
-// export interface MasterNodeData extends CNodeData {
-//     hasETCD: Boolean
-// }
+    return { ...defaults, ...options }
+}
 
-// export interface WorkerNodeData extends CNodeData {
-//     has
-// }
+export const getDefaultLoadBalancerData = (options?: Partial<LoadBalancerData>): LoadBalancerData => {
+    const defaults = {
+        name: 'LoadBalancer',
+        privateAddr: ''
+    }
 
-// export interface CloudData {
-//     name: String
-//     cloudType: CloudType
-//     masterCount: Number
-//     workerCount: Number
-//     useMasterHA: Boolean
-//     useExternalETCD: Boolean
-//     useInternalLB: Boolean
-// }
+    return { ...defaults, ...options }
+}
+
+export const getDefaultRegistryData = (options?: Partial<RegistryData>): RegistryData => {
+    const defaults = {
+        name: 'Registry',
+        privateAddr: ''
+    }
+
+    return { ...defaults, ...options }
+}
+
+export const getDefaultStorageServerData = (options?: Partial<StorageServerData>): StorageServerData => {
+    const defaults = {
+        name: 'Storage Server',
+        privateAddr: ''
+    }
+
+    return { ...defaults, ...options }
+}
+
+export const getDefaultStorageClusterData = (options?: Partial<StorageClusterData>): StorageClusterData => {
+    const defaults = {
+        name: 'Storage Cluster',
+        privateAddr: ''
+    }
+
+    return { ...defaults, ...options }
+}
+
+export const getDefaultETCDClusterData = (options?: Partial<ETCDClusterData>): ETCDClusterData => {
+    const defaults = {
+        name: 'ETCD Cluster',
+        privateAddr: ''
+    }
+
+    return { ...defaults, ...options }
+}
+
 
 // TODO: useMasterHA - MasterCount 검증 (minimum 3)
 // TODO: useExternalETCD - ETCD Cluster 검증, 아닌 경우 내부 ETCD (어떻게 표현할 것인지)

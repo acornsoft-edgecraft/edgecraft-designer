@@ -1,4 +1,4 @@
-import { Text, TextArea, Number, Checkbox, Select, Radio, Nested, Mask, CIDR } from './inputs';
+import { Text, TextArea, Number, Checkbox, Select, Radio, Nested, Mask, CIDR, IPAddr } from './inputs';
 
 const getComponent = (type: string) => {
     switch (type) {
@@ -28,6 +28,8 @@ const getComponent = (type: string) => {
             return Mask;
         case 'cidr':
             return CIDR;
+        case 'ipaddr':
+            return IPAddr;
     }
 };
 

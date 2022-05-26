@@ -25,6 +25,7 @@ import { Position, Node, GraphNode, ClusterComponentTypes, useVueFlow } from "..
 import Handle from "../../Handle/Handle.vue";
 import type { NodeProps } from "../../../types/node";
 import { useCloudHelper } from "../../../composables";
+import { getDefaultETCDClusterData, getDefaultLoadBalancerData, getDefaultMasterData, getDefaultRegistryData, getDefaultStorageClusterData, getDefaultStorageServerData, getDefaultWorkerData } from "../../../types";
 
 const { onNodeDragStop, instance, store } = useVueFlow();
 const props = defineProps<NodeProps>()
@@ -83,7 +84,7 @@ watch(() => props.data.workerCount, (newVal, oldVal) => {
 //   store.hooks.nodesChange.trigger(nodeChanges)
 // }
 // const addNodes = (nodeCount, isMaster = false) => {
-//   const newNodes = []
+//   const newNodes = []s
 //   const nodeName = isMaster ? ClusterComponentTypes.Master : ClusterComponentTypes.Worker
 //   for (let i = 0; i < nodeCount; i++) {
 //     //TODO: Master/Worker, ... 구분 처리
@@ -103,18 +104,34 @@ watch(() => props.data.workerCount, (newVal, oldVal) => {
 //   store.addNodes(newNodes);
 // }
 
-const getNodeData = (type: ClusterComponentTypes) => {
-    const data = {} as any;
+const getNodeData = (type: ClusterComponentTypes, label: string) => {
+    let data = {} as any;
 
     switch (type) {
         case ClusterComponentTypes.Master:
-            data.hasETCD = true
+            data = getDefaultMasterData()
             break;
         case ClusterComponentTypes.Worker:
+            data = getDefaultWorkerData()
+            break;
         case ClusterComponentTypes.LoadBalancer:
+            data = getDefaultLoadBalancerData()
+            break;
+        case ClusterComponentTypes.Registry:
+            data = getDefaultRegistryData()
+            break;
+        case ClusterComponentTypes.StorageServer:
+            data = getDefaultStorageServerData()
+            break;
+        case ClusterComponentTypes.StorageCluster:
+            data = getDefaultStorageClusterData()
+            break;
+        case ClusterComponentTypes.ETCDCluster:
+            data = getDefaultETCDClusterData()
             break;
     }
 
+    data.name = label;
     return data
 }
 
@@ -219,14 +236,15 @@ const addNodes = (type: ClusterComponentTypes, nodeCount: number) => {
     if (type === ClusterComponentTypes.Master) {
         isMasterHA = nodeCount > 1
         if (isMasterHA) {
+            const label = 'HAProxy'
             newNodes.push({
                 id: 'haproxy_0',
                 type: ClusterComponentTypes.LoadBalancer,
                 position: { x: 20, y: 60 },
-                label: 'HAProxy',
+                label,
                 parentNode: node.id,
                 resizeParent: true,
-                data: getNodeData(type),
+                data: getNodeData(type, label),
             } as Node)
         }
     }
@@ -244,7 +262,7 @@ const addNodes = (type: ClusterComponentTypes, nodeCount: number) => {
             label,
             parentNode: node.id,
             resizeParent: true,
-            data: getNodeData(type),
+            data: getNodeData(type, label),
         } as Node);
     }
 
@@ -371,7 +389,6 @@ const onDrop = (event: DragEvent) => {
 };
 
 onNodeDragStop(({ node }) => {
-    // console.log(`Dragstop on Gorup: ${JSON.stringify(node)}`);
     // const nodes = getNodesInside(getNodes.value, { ...props.dimensions, x: props.computedPosition.x, y: props.computedPosition.y }, transform.value);
     // if (nodes.some((n) => n.id === node.id && n.id !== props.id)) {
     //   node.label = `In ${props.id}`;
