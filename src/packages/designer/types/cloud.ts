@@ -25,6 +25,7 @@ export enum WorkerRoles {
     Worker = 'worker',              // k8s worker node
     Controller = 'controller',      // openstack controller node
     Network = 'network',            // openstack network node
+    Storage = 'storage',            // openstack storage node
     Compute = 'compute',            // openstack compute node (for vm instances)
 }
 

@@ -30,8 +30,8 @@ export const MasterDataRows = [
 export const WorkerDataRows = [
     ...MemberDataRows,
     {
-        type: 'select',
-        readonly: false,
+        type: 'text',
+        readonly: true,
         field: 'workerRole',
         label: 'Role'
     }

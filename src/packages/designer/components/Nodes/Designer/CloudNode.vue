@@ -25,7 +25,8 @@ import { Position, Node, GraphNode, ClusterComponentTypes, useVueFlow } from "..
 import Handle from "../../Handle/Handle.vue";
 import type { NodeProps } from "../../../types/node";
 import { useCloudHelper } from "../../../composables";
-import { getDefaultETCDClusterData, getDefaultLoadBalancerData, getDefaultMasterData, getDefaultRegistryData, getDefaultStorageClusterData, getDefaultStorageServerData, getDefaultWorkerData } from "../../../types";
+import { CloudType, getDefaultETCDClusterData, getDefaultLoadBalancerData, getDefaultMasterData, getDefaultRegistryData, getDefaultStorageClusterData, getDefaultStorageServerData, getDefaultWorkerData, WorkerRoles, XYPosition } from "../../../types";
+import { Cluster } from "cluster";
 
 const { onNodeDragStop, instance, store } = useVueFlow();
 const props = defineProps<NodeProps>()
@@ -35,14 +36,6 @@ const ids = new Map<ClusterComponentTypes, number>([[ClusterComponentTypes.LoadB
 let isMasterHA = false;
 
 const { masters, workers, haProxy, etcdCluster, arrangeMembers } = useCloudHelper(store, props.id)
-
-// const masters = computed(() => store.nodes.filter(n => n.type === ClusterComponentTypes.Master && n.parentNode === node.id))
-// const workers = computed(() => store.nodes.filter(n => n.type === ClusterComponentTypes.Worker && n.parentNode === node.id))
-// const haProxy = computed(() => store.getNodes.filter(n => n.type === ClusterComponentTypes.LoadBalancer && n.parentNode === node.id)[0]!)
-// const etcdCluster = computed(() => store.getNodes.filter(n => n.type === ClusterComponentTypes.ETCDCluster && n.parentNode === node.id)[0]!)
-
-//const rootMaster = computed(() => store.nodes.filter(n => n.type === ClusterComponentTypes.Master && n.id.endsWith('0'))[0])
-//const hasInternalLB = computed(() => store.nodes.some(n => n.type === ClusterComponentTypes.LoadBalancer))
 
 watch(() => props.data.masterCount, (newVal, oldVal) => {
     if (newVal < 1) {
@@ -79,32 +72,7 @@ watch(() => props.data.workerCount, (newVal, oldVal) => {
     nextTick(() => { arrangeMembers() })
 })
 
-// const removeNodes = (nodeCount, isMaster = false) => {
-//   const nodeChanges: NodeChange[] = store.getNodes.filter(item => item.parentNode === node.id && (isMaster ? item.type === ClusterComponentTypes.Master : item.type !== ClusterComponentTypes.Master)).map(item => ({ id: item.id, type: 'remove' }));
-//   store.hooks.nodesChange.trigger(nodeChanges)
-// }
-// const addNodes = (nodeCount, isMaster = false) => {
-//   const newNodes = []s
-//   const nodeName = isMaster ? ClusterComponentTypes.Master : ClusterComponentTypes.Worker
-//   for (let i = 0; i < nodeCount; i++) {
-//     //TODO: Master/Worker, ... 구분 처리
-//     //TODO: Position 배분 및 정리
-//     //TODO: Cluster Sizing (Dimension) 처리
-//     newNodes.push({
-//       id: `${nodeName}_${i}`,
-//       type: isMaster ? ClusterComponentTypes.Master : ClusterComponentTypes.Worker,
-//       //position: instance.value.project({ x: node.computedPosition.x - 200, y: node.computedPosition.y + (i * 35) - 80 }),
-//       position: getNodePosition(isMaster, i), // { x: 20, y: (i * 40) + 50 },
-//       label: `${nodeName} Node #${i}`,
-//       parentNode: node.id,
-//       resizeParent: true,
-//       data: getNodeData(isMaster),
-//     } as Node);
-//   }
-//   store.addNodes(newNodes);
-// }
-
-const getNodeData = (type: ClusterComponentTypes, label: string) => {
+const getNodeData = (type: ClusterComponentTypes, label: string, workerRole?: WorkerRoles) => {
     let data = {} as any;
 
     switch (type) {
@@ -112,7 +80,11 @@ const getNodeData = (type: ClusterComponentTypes, label: string) => {
             data = getDefaultMasterData()
             break;
         case ClusterComponentTypes.Worker:
-            data = getDefaultWorkerData()
+            if (workerRole) {
+                data = getDefaultWorkerData({ workerRole: workerRole })
+            } else {
+                data = getDefaultWorkerData({ workerRole: node.data.cloudType === CloudType.Openstack ? WorkerRoles.Compute : WorkerRoles.Worker })
+            }
             break;
         case ClusterComponentTypes.LoadBalancer:
             data = getDefaultLoadBalancerData()
@@ -136,33 +108,43 @@ const getNodeData = (type: ClusterComponentTypes, label: string) => {
 }
 
 const getNodePosition = (type: ClusterComponentTypes, seq: number) => {
-    const basePos = { x: 20, y: 40 }
+    // 실제 Cluster내의 Member Nodes 정렬은 arrangeMembers를 통해서 처리된다.
+    //const basePos = { x: 20, y: 40 }
 
-    if (allowTypes.includes(type)) {
-        // Drop 생성 기본 포지션
-        return basePos
-    } else {
-        // MasterHA 여부에 따른 LB 위치 조정
+    // if (allowTypes.includes(type)) {
+    //     // Drop 생성 기본 포지션
+    //     return basePos
+    // } else {
+    //     // MasterHA 여부에 따른 LB 위치 조정
+    //     const width = 150;
+    //     const yGap = isMasterHA ? 270 : 170;
+    //     const xGap = isMasterHA ? 150 : 0
+    //     if (type === ClusterComponentTypes.Master) {
+    //         return {
+    //             x: xGap + basePos.x + (width * seq),
+    //             y: basePos.y
+    //         }
+    //     } else {
+    //         return {
+    //             x: basePos.x + (width * seq),
+    //             y: basePos.y + yGap
+    //         }
+    //     }
+    // }
 
-        const width = 150;
-        const yGap = isMasterHA ? 270 : 170;
-        const xGap = isMasterHA ? 150 : 0
-        if (type === ClusterComponentTypes.Master) {
-            return {
-                x: xGap + basePos.x + (width * seq),
-                y: basePos.y
-            }
-        } else {
-            return {
-                x: basePos.x + (width * seq),
-                y: basePos.y + yGap
-            }
-        }
+    return { x: 20, y: 40 }
+}
+
+const getLabel = (type: ClusterComponentTypes) => {
+    if (type === ClusterComponentTypes.Worker && node.data.cloudType === CloudType.Openstack) {
+        const name = WorkerRoles.Compute as string
+        return name.charAt(0).toUpperCase() + name.slice(1)
     }
+    return type.charAt(0).toUpperCase() + type.slice(1)
 }
 
 const getIdLabel = (type: ClusterComponentTypes, seq: number) => {
-    const nodeName = type.charAt(0).toUpperCase() + type.slice(1)
+    const nodeName = getLabel(type)
     let id = ""
     let label = ""
 
@@ -175,16 +157,6 @@ const getIdLabel = (type: ClusterComponentTypes, seq: number) => {
         id = `${nodeName}_${seq}`
         label = `${nodeName} Node #${seq}`
     }
-
-    // if (allowTypes.includes(type)) {
-    //     const seq = ids.get(type)
-    //     id = `${nodeName}_${seq}`
-    //     ids.set(type, seq + 1)
-    //     label = nodeName
-    // } else {
-    //     id = `${nodeName}_${seq}`
-    //     label = `${nodeName} Node #${seq}`
-    // }
 
     return { id, label }
 }
@@ -223,6 +195,28 @@ const removeNodes = (type: ClusterComponentTypes) => {
     })
 }
 
+const getNode = (id: string, label: string, type: ClusterComponentTypes, position: XYPosition, workerRole?: WorkerRoles) => ({
+    id,
+    type,
+    position,
+    label,
+    parentNode: node.id,
+    resizeParent: true,
+    data: getNodeData(type, label, workerRole),
+})
+
+const addOpenstackNodes = (nodes: any[]) => {
+    // Controller
+    if (!store.nodes.some(n => n.type === ClusterComponentTypes.Worker && n.data.workerRoles === WorkerRoles.Controller)) {
+        nodes.push(getNode('controller_0', 'Controller', ClusterComponentTypes.Worker, getNodePosition(ClusterComponentTypes.Worker, 0), WorkerRoles.Controller))
+    }
+
+    // Network
+    if (!store.nodes.some(n => n.type === ClusterComponentTypes.Worker && n.data.workerRoles === WorkerRoles.Network)) {
+        nodes.push(getNode('network_0', 'Network', ClusterComponentTypes.Worker, getNodePosition(ClusterComponentTypes.Worker, 1), WorkerRoles.Network))
+    }
+}
+
 /**
  * 지정한 유형의 노드를 지정한 갯수만큼 추가 처리
  * @param type 추가할 노드 유형
@@ -236,18 +230,12 @@ const addNodes = (type: ClusterComponentTypes, nodeCount: number) => {
     if (type === ClusterComponentTypes.Master) {
         isMasterHA = nodeCount > 1
         if (isMasterHA) {
-            const label = 'HAProxy'
-            newNodes.push({
-                id: 'haproxy_0',
-                type: ClusterComponentTypes.LoadBalancer,
-                position: { x: 20, y: 60 },
-                label,
-                parentNode: node.id,
-                resizeParent: true,
-                data: getNodeData(type, label),
-            } as Node)
+            newNodes.push(getNode('haproxy_0', 'HAProxy', ClusterComponentTypes.LoadBalancer, { x: 20, y: 60 }))
         }
     }
+
+    // Openstack Nodes 추가
+    if (node.data.cloudType === CloudType.Openstack && type === ClusterComponentTypes.Worker) addOpenstackNodes(newNodes)
 
     // 개별 노드 추가
     for (let i = 0; i < nodeCount; i++) {
@@ -255,15 +243,7 @@ const addNodes = (type: ClusterComponentTypes, nodeCount: number) => {
         //TODO: Master/Worker, ... 구분 처리
         //TODO: Position 배분 및 정리
         //TODO: Cluster Sizing (Dimension) 처리
-        newNodes.push({
-            id,
-            type,
-            position: getNodePosition(type, i),
-            label,
-            parentNode: node.id,
-            resizeParent: true,
-            data: getNodeData(type, label),
-        } as Node);
+        newNodes.push(getNode(id, label, type, getNodePosition(type, i)))
     }
 
     store.addNodes(newNodes);
@@ -332,13 +312,6 @@ const addEdges = (type: ClusterComponentTypes, nodeCount: number) => {
 }
 
 /**
- * 추가된 Node의 상황에 따라 기존에 존재하는 노드들 이동 처리
- */
-const moveNodes = () => {
-
-}
-
-/**
  * 지정한 노드 유형에 따라 추가/삭제의 관련 노드들 처리
  * @param type 처리할 노드 유형
  * @param nodeCount 추가할 노드 갯수
@@ -354,28 +327,6 @@ const processNodes = (type: ClusterComponentTypes, nodeCount: number = 1, isRemo
         addEdges(type, nodeCount)
     }
 }
-
-// const checkNodeCondition = (type: ClusterComponentTypes): boolean => {
-//     if (!allowTypes.includes(type)) {
-//         // TODO: 메시지 처리 필요
-//         alert('Not Supported');
-//         return false;
-//     }
-
-//     // switch (type) {
-//     //     case ClusterComponentTypes.LoadBalancer:
-//     //         if (hasInternalLB.value) {
-//     //             alert('내부에 한개 이상의 LB를 가질 수 없습니다.')
-//     //             return false;
-//     //         }
-//     //         if (!isMasterHA.value) {
-//     //             alert('Master HA 구성이 필요합니다.')
-//     //             return false;
-//     //         }
-//     // }
-
-//     return true
-// }
 
 const onDrop = (event: DragEvent) => {
     event.stopPropagation();

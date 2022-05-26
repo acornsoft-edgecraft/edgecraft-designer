@@ -1,5 +1,3 @@
-import { RegistryNode } from '../components'
-import SelectionPaneVue from '../container/SelectionPane/SelectionPane.vue'
 import { ClusterComponentTypes, Position, Store } from '../types'
 import { handleParentResizing } from '../utils'
 
