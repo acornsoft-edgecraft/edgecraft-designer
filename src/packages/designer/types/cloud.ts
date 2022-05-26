@@ -25,6 +25,7 @@ export enum WorkerRoles {
     Worker = 'worker',              // k8s worker node
     Controller = 'controller',      // openstack controller node
     Network = 'network',            // openstack network node
+    Storage = 'storage',            // openstack storage node
     Compute = 'compute',            // openstack compute node (for vm instances)
 }
 
@@ -107,7 +108,6 @@ export const getDefaultCloudData = (options?: Partial<ClusterData>): ClusterData
         cloudType: CloudType.Baremetal,
         masterCount: 1,
         workerCount: 3,
-        
         useExternalETCD: false,
         serviceCIDR: '192.168.1.0/24',
         podCIDR: '192.168.2.0/24'

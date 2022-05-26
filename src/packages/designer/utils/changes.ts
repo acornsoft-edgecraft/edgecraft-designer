@@ -25,149 +25,151 @@ type CreatePositionChangeParams = {
 }
 
 export const handleParentResizing = (updateItem: GraphNode, curr: GraphNode[]) => {
-  const parent = updateItem.parentNode ? curr.find((el) => el.id === updateItem.parentNode) : undefined
-  if (parent) {
-    const restSize = 20;
-    const extendWidth = updateItem.position.x + updateItem.dimensions.width - parent.dimensions.width + restSize
-    const extendHeight = updateItem.position.y + updateItem.dimensions.height - parent.dimensions.height + restSize
-
-    parent.style = { ...parent.style } || {}
-
-    // Child 이동에 따른 Parent 조정
-    if (extendWidth > 0 || extendHeight > 0 || updateItem.position.x < 0 || updateItem.position.y < 0) {
-      if (extendWidth > 0) {
-        if (!parent.style.width) {
-          parent.style.width = parent.dimensions.width
-        }
-        if (typeof parent.style.width === 'string') {
-          const currWidth = parseInt(parent.style.width, 10)
-          parent.style.width = `${currWidth + extendWidth}px`
-        } else {
-          parent.style.width += extendWidth
-        }
-      }
-
-      if (extendHeight > 0) {
-        if (!parent.style.height) {
-          parent.style.height = parent.dimensions.height
-        }
-        if (typeof parent.style.height === 'string') {
-          const currWidth = parseInt(parent.style.height, 10)
-          parent.style.height = `${currWidth + extendHeight}px`
-        } else {
-          parent.style.height += extendHeight
-        }
-      }
-
-      if (updateItem.position.x < 0) {
-        const xDiff = Math.abs(updateItem.position.x)
-        parent.position.x = parent.position.x - xDiff
-        if (typeof parent.style.width === 'string') {
-          const currWidth = parseInt(parent.style.width, 10)
-          parent.style.width = `${currWidth + xDiff}px`
-        } else {
-          ; (parent.style as any).width += xDiff
-        }
-        updateItem.position.x = 0
-      }
-
-      if (updateItem.position.y < 0) {
-        const yDiff = Math.abs(updateItem.position.y)
-        parent.position.y = parent.position.y - yDiff
-        if (typeof parent.style.height === 'string') {
-          const currWidth = parseInt(parent.style.height, 10)
-          parent.style.height = `${currWidth + yDiff}px`
-        } else {
-          ; (parent.style as any).height += yDiff
-        }
-        updateItem.position.y = 0
-      }
-    }
-
-    // 자식 노드들에 따른 최대 Width/Height 보정
-    const childs = curr.filter(item => item.parentNode === parent.id);
-    const limitSize = { width: 0, height: 0 }
-    childs.forEach(c => {
-      if (limitSize.width < (c.position.x + c.dimensions.width)) limitSize.width = (c.position.x + c.dimensions.width)
-      if (limitSize.height < (c.position.y + c.dimensions.height)) limitSize.height = (c.position.y + c.dimensions.height)
-    })
-    limitSize.width += restSize;
-    limitSize.height += restSize;
-
-    if (typeof parent.style.width === 'string') {
-      const parentWidth = parseInt(parent.style.width, 10)
-      if (parentWidth > limitSize.width) {
-        parent.style.width = `${limitSize.width}px`
-      }
-    } else {
-      if (parent.style.width > limitSize.width) {
-        parent.style.width = limitSize.width
-      }
-    }
-
-    if (typeof parent.style.height === 'string') {
-      const parentHeight = parseInt(parent.style.height, 10)
-      if (parentHeight > limitSize.height) {
-        parent.style.height = `${limitSize.height}px`
-      }
-    } else {
-      if (parent.style.height > limitSize.height) {
-        parent.style.height = limitSize.height
-      }
-    }
-
-    parent.dimensions.width = (
-      typeof parent.style.width === 'string' ? parseInt((<string>parent.style.width)!, 10) : parent.style.width
-    )!
-    parent.dimensions.height = (
-      typeof parent.style.height === 'string' ? parseInt((<string>parent.style.height)!, 10) : parent.style.height
-    )!
-
-    /*
-        // Shrink Case
-        if (extendWidth < 0 || extendHeight < 0) {
-          parent.style = { ...parent.style } || {}
-    
-          if (extendWidth < 0) {
-            if (!parent.style.width) {
-              parent.style.width = parent.dimensions.width
-            }
-            if (typeof parent.style.width === 'string') {
-              const currWidth = parseInt(parent.style.width, 10)
-              if (currWidth + extendWidth > limitSize.width)
-                parent.style.width = `${currWidth + extendWidth}px`
-            } else {
-              if (parent.style.width + extendWidth > limitSize.width)
-                parent.style.width += extendWidth
-            }
+  if (updateItem) {
+    const parent = updateItem.parentNode ? curr.find((el) => el.id === updateItem.parentNode) : undefined
+    if (parent) {
+      const restSize = 20;
+      const extendWidth = updateItem.position.x + updateItem.dimensions.width - parent.dimensions.width + restSize
+      const extendHeight = updateItem.position.y + updateItem.dimensions.height - parent.dimensions.height + restSize
+  
+      parent.style = { ...parent.style } || {}
+  
+      // Child 이동에 따른 Parent 조정
+      if (extendWidth > 0 || extendHeight > 0 || updateItem.position.x < 0 || updateItem.position.y < 0) {
+        if (extendWidth > 0) {
+          if (!parent.style.width) {
+            parent.style.width = parent.dimensions.width
           }
-    
-          if (extendHeight < 0) {
-            if (!parent.style.height) {
-              parent.style.height = parent.dimensions.height
-            }
-            if (typeof parent.style.height === 'string') {
-              const currHeight = parseInt(parent.style.height, 10)
-              if (currHeight + extendHeight > limitSize.height)
-                parent.style.height = `${currHeight + extendHeight}px`
-            } else {
-              parent.style.height += extendHeight
-            }
+          if (typeof parent.style.width === 'string') {
+            const currWidth = parseInt(parent.style.width, 10)
+            parent.style.width = `${currWidth + extendWidth}px`
+          } else {
+            parent.style.width += extendWidth
           }
-    
-          // TODO: 자식의 왼쪽 Position이 줄어든 경우도 감안할지 검토 필요.
-    
-          parent.dimensions.width = (
-            typeof parent.style.width === 'string' ? parseInt((<string>parent.style.width)!, 10) : parent.style.width
-          )
-          parent.dimensions.height = (
-            typeof parent.style.height === 'string' ? parseInt((<string>parent.style.height)!, 10) : parent.style.height
-          )
         }
-    
-        // Extend Case
-
-    */
+  
+        if (extendHeight > 0) {
+          if (!parent.style.height) {
+            parent.style.height = parent.dimensions.height
+          }
+          if (typeof parent.style.height === 'string') {
+            const currWidth = parseInt(parent.style.height, 10)
+            parent.style.height = `${currWidth + extendHeight}px`
+          } else {
+            parent.style.height += extendHeight
+          }
+        }
+  
+        if (updateItem.position.x < 0) {
+          const xDiff = Math.abs(updateItem.position.x)
+          parent.position.x = parent.position.x - xDiff
+          if (typeof parent.style.width === 'string') {
+            const currWidth = parseInt(parent.style.width, 10)
+            parent.style.width = `${currWidth + xDiff}px`
+          } else {
+            ; (parent.style as any).width += xDiff
+          }
+          updateItem.position.x = 0
+        }
+  
+        if (updateItem.position.y < 0) {
+          const yDiff = Math.abs(updateItem.position.y)
+          parent.position.y = parent.position.y - yDiff
+          if (typeof parent.style.height === 'string') {
+            const currWidth = parseInt(parent.style.height, 10)
+            parent.style.height = `${currWidth + yDiff}px`
+          } else {
+            ; (parent.style as any).height += yDiff
+          }
+          updateItem.position.y = 0
+        }
+      }
+  
+      // 자식 노드들에 따른 최대 Width/Height 보정
+      const childs = curr.filter(item => item.parentNode === parent.id);
+      const limitSize = { width: 0, height: 0 }
+      childs.forEach(c => {
+        if (limitSize.width < (c.position.x + c.dimensions.width)) limitSize.width = (c.position.x + c.dimensions.width)
+        if (limitSize.height < (c.position.y + c.dimensions.height)) limitSize.height = (c.position.y + c.dimensions.height)
+      })
+      limitSize.width += restSize;
+      limitSize.height += restSize;
+  
+      if (typeof parent.style.width === 'string') {
+        const parentWidth = parseInt(parent.style.width, 10)
+        if (parentWidth > limitSize.width) {
+          parent.style.width = `${limitSize.width}px`
+        }
+      } else {
+        if (parent.style.width > limitSize.width) {
+          parent.style.width = limitSize.width
+        }
+      }
+  
+      if (typeof parent.style.height === 'string') {
+        const parentHeight = parseInt(parent.style.height, 10)
+        if (parentHeight > limitSize.height) {
+          parent.style.height = `${limitSize.height}px`
+        }
+      } else {
+        if (parent.style.height > limitSize.height) {
+          parent.style.height = limitSize.height
+        }
+      }
+  
+      parent.dimensions.width = (
+        typeof parent.style.width === 'string' ? parseInt((<string>parent.style.width)!, 10) : parent.style.width
+      )!
+      parent.dimensions.height = (
+        typeof parent.style.height === 'string' ? parseInt((<string>parent.style.height)!, 10) : parent.style.height
+      )!
+  
+      /*
+          // Shrink Case
+          if (extendWidth < 0 || extendHeight < 0) {
+            parent.style = { ...parent.style } || {}
+      
+            if (extendWidth < 0) {
+              if (!parent.style.width) {
+                parent.style.width = parent.dimensions.width
+              }
+              if (typeof parent.style.width === 'string') {
+                const currWidth = parseInt(parent.style.width, 10)
+                if (currWidth + extendWidth > limitSize.width)
+                  parent.style.width = `${currWidth + extendWidth}px`
+              } else {
+                if (parent.style.width + extendWidth > limitSize.width)
+                  parent.style.width += extendWidth
+              }
+            }
+      
+            if (extendHeight < 0) {
+              if (!parent.style.height) {
+                parent.style.height = parent.dimensions.height
+              }
+              if (typeof parent.style.height === 'string') {
+                const currHeight = parseInt(parent.style.height, 10)
+                if (currHeight + extendHeight > limitSize.height)
+                  parent.style.height = `${currHeight + extendHeight}px`
+              } else {
+                parent.style.height += extendHeight
+              }
+            }
+      
+            // TODO: 자식의 왼쪽 Position이 줄어든 경우도 감안할지 검토 필요.
+      
+            parent.dimensions.width = (
+              typeof parent.style.width === 'string' ? parseInt((<string>parent.style.width)!, 10) : parent.style.width
+            )
+            parent.dimensions.height = (
+              typeof parent.style.height === 'string' ? parseInt((<string>parent.style.height)!, 10) : parent.style.height
+            )
+          }
+      
+          // Extend Case
+  
+      */
+    }
   }
 }
 

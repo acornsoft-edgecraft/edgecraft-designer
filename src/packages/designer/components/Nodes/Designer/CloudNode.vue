@@ -25,7 +25,8 @@ import { Position, Node, GraphNode, ClusterComponentTypes, useVueFlow } from "..
 import Handle from "../../Handle/Handle.vue";
 import type { NodeProps } from "../../../types/node";
 import { useCloudHelper } from "../../../composables";
-import { getDefaultETCDClusterData, getDefaultLoadBalancerData, getDefaultMasterData, getDefaultRegistryData, getDefaultStorageClusterData, getDefaultStorageServerData, getDefaultWorkerData } from "../../../types";
+import { CloudType, getDefaultETCDClusterData, getDefaultLoadBalancerData, getDefaultMasterData, getDefaultRegistryData, getDefaultStorageClusterData, getDefaultStorageServerData, getDefaultWorkerData, WorkerRoles, XYPosition } from "../../../types";
+import { Cluster } from "cluster";
 
 const { onNodeDragStop, instance, store } = useVueFlow();
 const props = defineProps<NodeProps>()
@@ -71,7 +72,7 @@ watch(() => props.data.workerCount, (newVal, oldVal) => {
     nextTick(() => { arrangeMembers() })
 })
 
-const getNodeData = (type: ClusterComponentTypes, label: string) => {
+const getNodeData = (type: ClusterComponentTypes, label: string, workerRole?: WorkerRoles) => {
     let data = {} as any;
 
     switch (type) {
@@ -79,7 +80,11 @@ const getNodeData = (type: ClusterComponentTypes, label: string) => {
             data = getDefaultMasterData()
             break;
         case ClusterComponentTypes.Worker:
-            data = getDefaultWorkerData()
+            if (workerRole) {
+                data = getDefaultWorkerData({ workerRole: workerRole })
+            } else {
+                data = getDefaultWorkerData({ workerRole: node.data.cloudType === CloudType.Openstack ? WorkerRoles.Compute : WorkerRoles.Worker })
+            }
             break;
         case ClusterComponentTypes.LoadBalancer:
             data = getDefaultLoadBalancerData()
@@ -103,33 +108,43 @@ const getNodeData = (type: ClusterComponentTypes, label: string) => {
 }
 
 const getNodePosition = (type: ClusterComponentTypes, seq: number) => {
-    const basePos = { x: 20, y: 40 }
+    // 실제 Cluster내의 Member Nodes 정렬은 arrangeMembers를 통해서 처리된다.
+    //const basePos = { x: 20, y: 40 }
 
-    if (allowTypes.includes(type)) {
-        // Drop 생성 기본 포지션
-        return basePos
-    } else {
-        // MasterHA 여부에 따른 LB 위치 조정
+    // if (allowTypes.includes(type)) {
+    //     // Drop 생성 기본 포지션
+    //     return basePos
+    // } else {
+    //     // MasterHA 여부에 따른 LB 위치 조정
+    //     const width = 150;
+    //     const yGap = isMasterHA ? 270 : 170;
+    //     const xGap = isMasterHA ? 150 : 0
+    //     if (type === ClusterComponentTypes.Master) {
+    //         return {
+    //             x: xGap + basePos.x + (width * seq),
+    //             y: basePos.y
+    //         }
+    //     } else {
+    //         return {
+    //             x: basePos.x + (width * seq),
+    //             y: basePos.y + yGap
+    //         }
+    //     }
+    // }
 
-        const width = 150;
-        const yGap = isMasterHA ? 270 : 170;
-        const xGap = isMasterHA ? 150 : 0
-        if (type === ClusterComponentTypes.Master) {
-            return {
-                x: xGap + basePos.x + (width * seq),
-                y: basePos.y
-            }
-        } else {
-            return {
-                x: basePos.x + (width * seq),
-                y: basePos.y + yGap
-            }
-        }
+    return { x: 20, y: 40 }
+}
+
+const getLabel = (type: ClusterComponentTypes) => {
+    if (type === ClusterComponentTypes.Worker && node.data.cloudType === CloudType.Openstack) {
+        const name = WorkerRoles.Compute as string
+        return name.charAt(0).toUpperCase() + name.slice(1)
     }
+    return type.charAt(0).toUpperCase() + type.slice(1)
 }
 
 const getIdLabel = (type: ClusterComponentTypes, seq: number) => {
-    const nodeName = type.charAt(0).toUpperCase() + type.slice(1)
+    const nodeName = getLabel(type)
     let id = ""
     let label = ""
 
@@ -180,6 +195,28 @@ const removeNodes = (type: ClusterComponentTypes) => {
     })
 }
 
+const getNode = (id: string, label: string, type: ClusterComponentTypes, position: XYPosition, workerRole?: WorkerRoles) => ({
+    id,
+    type,
+    position,
+    label,
+    parentNode: node.id,
+    resizeParent: true,
+    data: getNodeData(type, label, workerRole),
+})
+
+const addOpenstackNodes = (nodes: any[]) => {
+    // Controller
+    if (!store.nodes.some(n => n.type === ClusterComponentTypes.Worker && n.data.workerRoles === WorkerRoles.Controller)) {
+        nodes.push(getNode('controller_0', 'Controller', ClusterComponentTypes.Worker, getNodePosition(ClusterComponentTypes.Worker, 0), WorkerRoles.Controller))
+    }
+
+    // Network
+    if (!store.nodes.some(n => n.type === ClusterComponentTypes.Worker && n.data.workerRoles === WorkerRoles.Network)) {
+        nodes.push(getNode('network_0', 'Network', ClusterComponentTypes.Worker, getNodePosition(ClusterComponentTypes.Worker, 1), WorkerRoles.Network))
+    }
+}
+
 /**
  * 지정한 유형의 노드를 지정한 갯수만큼 추가 처리
  * @param type 추가할 노드 유형
@@ -193,18 +230,12 @@ const addNodes = (type: ClusterComponentTypes, nodeCount: number) => {
     if (type === ClusterComponentTypes.Master) {
         isMasterHA = nodeCount > 1
         if (isMasterHA) {
-            const label = 'HAProxy'
-            newNodes.push({
-                id: 'haproxy_0',
-                type: ClusterComponentTypes.LoadBalancer,
-                position: { x: 20, y: 60 },
-                label,
-                parentNode: node.id,
-                resizeParent: true,
-                data: getNodeData(type, label),
-            } as Node)
+            newNodes.push(getNode('haproxy_0', 'HAProxy', ClusterComponentTypes.LoadBalancer, { x: 20, y: 60 }))
         }
     }
+
+    // Openstack Nodes 추가
+    if (node.data.cloudType === CloudType.Openstack && type === ClusterComponentTypes.Worker) addOpenstackNodes(newNodes)
 
     // 개별 노드 추가
     for (let i = 0; i < nodeCount; i++) {
@@ -212,15 +243,7 @@ const addNodes = (type: ClusterComponentTypes, nodeCount: number) => {
         //TODO: Master/Worker, ... 구분 처리
         //TODO: Position 배분 및 정리
         //TODO: Cluster Sizing (Dimension) 처리
-        newNodes.push({
-            id,
-            type,
-            position: getNodePosition(type, i),
-            label,
-            parentNode: node.id,
-            resizeParent: true,
-            data: getNodeData(type, label),
-        } as Node);
+        newNodes.push(getNode(id, label, type, getNodePosition(type, i)))
     }
 
     store.addNodes(newNodes);

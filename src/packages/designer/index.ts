@@ -1,11 +1,11 @@
 export { default as VueFlow } from './container/VueFlow/VueFlow.vue'
 export { default as Handle } from './components/Handle/Handle.vue'
 export { default as EdgeText } from './components/Edges/EdgeText.vue'
-export { default as StraightEdge } from './components/Edges/StraightEdge.ts'
-export { default as StepEdge } from './components/Edges/StepEdge.ts'
-export { default as BezierEdge } from './components/Edges/BezierEdge.ts'
-export { default as SimpleBezierEdge } from './components/Edges/SimpleBezierEdge.ts'
-export { default as SmoothStepEdge } from './components/Edges/SmoothStepEdge.ts'
+export { default as StraightEdge } from './components/Edges/StraightEdge'
+export { default as StepEdge } from './components/Edges/StepEdge'
+export { default as BezierEdge } from './components/Edges/BezierEdge'
+export { default as SimpleBezierEdge } from './components/Edges/SimpleBezierEdge'
+export { default as SmoothStepEdge } from './components/Edges/SmoothStepEdge'
 
 export {
   getBezierPath,

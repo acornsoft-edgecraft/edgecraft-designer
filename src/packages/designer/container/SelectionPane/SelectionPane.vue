@@ -39,7 +39,6 @@ useKeyPress(deleteKeyCode, (keyPressed) => {
   const selectedEdges = store.getSelectedEdges.filter(e => !isClusterMemberEdge(e))
 
   if (keyPressed && (selectedNodes || selectedEdges)) {
-
     const connectedEdges = (selectedNodes && getConnectedEdges(selectedNodes, store.edges)) ?? []
 
     const nodeChanges: NodeChange[] = selectedNodes.map((n) => ({ id: n.id, type: 'remove' }))
@@ -48,10 +47,10 @@ useKeyPress(deleteKeyCode, (keyPressed) => {
       type: 'remove',
     }))
 
-    store.hooks.nodesChange.trigger(nodeChanges)
     store.hooks.edgesChange.trigger(edgeChanges)
-    store.nodesSelectionActive = false
+    store.hooks.nodesChange.trigger(nodeChanges)
 
+    store.nodesSelectionActive = false
     store.resetSelectedElements()
   }
 })
