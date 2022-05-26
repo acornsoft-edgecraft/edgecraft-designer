@@ -11,12 +11,13 @@
     <K3Panel header="Properties">
       <div class="props-row"
            v-for="(row, index) in props.schema?.rows"
-           :key="`${row}-${String(index)}`"
+           :key="`${getKey(index)}`"
            :class="{ 'props-row-flex-column': row.type === 'nested' }">
         <template v-if="evaluateConditionalDisplay(row, modelValue)">
           <div class="props-row-label">{{ row.label ?? row.field }}</div>
           <div class="props-row-input">
             <component v-if="modelValue"
+                       :key="`${getKey(index)}`"
                        :is="getComponent(row.type)"
                        v-model="modelValue"
                        :config="row"
@@ -52,7 +53,16 @@ const props = defineProps({
     required: true,
     default: {},
   },
+  keyField: {
+    type: String,
+    required: true,
+    default: ''
+  }
 });
+
+const getKey = (index: number) => {
+  return `${index}-${props.modelValue[props.keyField].toLowerCase().replace(/\s/g, '_')}`
+}
 
 const onApply = () => {
   emit('change', props.modelValue)

@@ -56,6 +56,11 @@ onMounted(() => {
   store.updateNodeDimensions([{ id: node.value.id, nodeElement: nodeElement.value, forceUpdate: true }])
 })
 
+// MOD: Data의 name이 변경되면 Label에 적용
+watch(() => node.value.data.name, (newVal) => {
+  node.value.label = newVal
+})
+
 watch(
   [
     () => node.value.position,

@@ -3,6 +3,7 @@
                v-if="typeof props.label !== 'string' && props.label" />
     <span v-else
           v-html="props.label" />
+    {{ props.data.privateAddr }}
     <div class="props-disp-container">
         <img v-if="props.data.hasETCD"
              draggable="false"

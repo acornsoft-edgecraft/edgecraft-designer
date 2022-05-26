@@ -2,23 +2,48 @@
  * Property Editor Schema 정의 (Rows)
  */
 
-export const MasterDataRows = [{
-    type: 'checkbox',
-    readonly: true,
-    field: 'hasETCD',
-    label: 'Use Local ETCD',
-}]
-export const WorkerDataRows = []
-export const RegistryDataRows = []
-export const LoadbalancerDataRows = []
+const NodeDataRows = {
+    type: 'text',
+    readonly: false,
+    field: 'name',
+    label: 'Name',
+}
+const MemberDataRows = [
+    NodeDataRows,
+    {
+        type: 'ipaddr',
+        readonly: false,
+        field: 'privateAddr',
+        label: 'Private IP'
+    }
+]
+
+export const MasterDataRows = [
+    ...MemberDataRows,
+    {
+        type: 'checkbox',
+        readonly: true,
+        field: 'hasETCD',
+        label: 'Use Local ETCD',
+    }
+]
+export const WorkerDataRows = [
+    ...MemberDataRows,
+    {
+        type: 'select',
+        readonly: false,
+        field: 'workerRole',
+        label: 'Role'
+    }
+]
+export const RegistryDataRows = [...MemberDataRows]
+export const LoadbalancerDataRows = [...MemberDataRows]
+export const StorageServerDataRows = [...MemberDataRows]
+export const StorageClusterDataRows = [...MemberDataRows]
+export const ETCDClusterDataRows = [...MemberDataRows]
 
 export const CloudDataRows = [
-    {
-        type: 'text',
-        readonly: false,
-        field: 'name',
-        label: 'Name',
-    },
+    NodeDataRows,
     {
         type: 'text',
         readonly: true,

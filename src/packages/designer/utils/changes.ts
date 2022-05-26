@@ -125,7 +125,6 @@ export const handleParentResizing = (updateItem: GraphNode, curr: GraphNode[]) =
 
     /*
         // Shrink Case
-        console.log(`LimitSize : ${JSON.stringify(limitSize)}, ExtendSize : {${extendWidth}, ${extendHeight}}`)
         if (extendWidth < 0 || extendHeight < 0) {
           parent.style = { ...parent.style } || {}
     
