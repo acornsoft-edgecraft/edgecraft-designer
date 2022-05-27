@@ -1,5 +1,6 @@
 <template>
   <div class="save__controls">
+    <button @click="onSelectAll">select all</button>
     <button @click="onSave">save</button>
     <button @click="onRestore">restore</button>
   </div>
@@ -18,7 +19,7 @@ import { useZoomPanHelper, FlowExportObject, useVueFlow } from "~/packages/desig
 // const emits = defineEmits(['eventname'])
 // Properties
 const { setTransform } = useZoomPanHelper();
-const { setNodes, setEdges, instance } = useVueFlow();
+const { getNodes, setNodes, setEdges, nodesSelectionActive, instance, addSelectedNodes } = useVueFlow();
 const flowKey = "example-flow";
 const state = useStorage<FlowExportObject>(flowKey, {
   nodes: [],
@@ -29,6 +30,11 @@ const state = useStorage<FlowExportObject>(flowKey, {
 // Compputed
 // Watcher
 // Methods
+const onSelectAll = () => {
+  addSelectedNodes(getNodes.value)
+  nodesSelectionActive.value = true;
+}
+
 const onSave = () => {
   state.value = instance.value?.toObject();
 };
