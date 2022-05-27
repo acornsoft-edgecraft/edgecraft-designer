@@ -18,8 +18,9 @@
                        @edge-update-start="onEdgeUpdateStart"
                        @edge-update-end="onEdgeUpdateEnd"
                        @edge-update="onEdgeUpdate"
-                       :snapToGrid="true"
-                       :snapGrid="[5, 5]">
+                       :edge-updatable="true"
+                       :snap-to-grid="true"
+                       :snap-grid="[5, 5]">
                 <K3DesignerSaveControls />
                 <Background :gap="5" />
                 <MiniMap />

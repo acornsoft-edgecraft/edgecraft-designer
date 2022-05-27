@@ -102,6 +102,9 @@ export interface ClusterData extends NodeData {
     podCIDR: String
 }
 
+// Openstack cluseter api 검색 필요.
+// Private / Public Network 연결고리 bastion server 
+
 export const getDefaultCloudData = (options?: Partial<ClusterData>): ClusterData => {
     const defaults = {
         name: `${CloudType.Baremetal.charAt(0).toUpperCase() + CloudType.Baremetal.slice(1)} Cluster`,
