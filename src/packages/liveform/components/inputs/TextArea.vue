@@ -1,25 +1,16 @@
 <template>
 	<K3Textarea v-model="modelValue[config.field!]"
 				:disabled="readonly"
-				:type="config.type === 'password' ? 'password' : 'text'"
-				@change="emitChange" />
-	<!-- <textarea
-		v-model="modelValue[config.field!]"
-		:readonly="config.readonly"
-		:type="config.type === 'password' ? 'password' : 'text'"
-		@change="emitChange"
-	/> -->
+				:type="config.type"
+				@change="onChange" />
 </template>
 <script setup lang="ts">
 import { defineProps, PropType, defineEmits } from '@vue/runtime-core';
 import type { RowType } from '../../types/Types';
 
 const emit = defineEmits(['change']);
-let emitChange = () => {
-	emit('change');
-};
-
-defineProps({
+const temp = ref("")
+const props = defineProps({
 	modelValue: {
 		type: Object,
 		required: true,
@@ -33,6 +24,15 @@ defineProps({
 		required: true
 	}
 });
+
+const onChange = () => {
+	props.modelValue[props.config.field!] = temp.value;
+	emit('change')
+}
+
+onMounted(() => {
+	temp.value = props.modelValue[props.config.field!]
+})
 </script>
 
 <style lang="scss" scoped>
