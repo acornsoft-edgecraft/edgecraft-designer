@@ -1,17 +1,11 @@
 <template>
 	<K3InputNumber id="integeronly"
 				   :disabled="readonly"
-				   v-model="modelValue[config.field!]"
-				   @change="emitChange" />
+				   v-model="modelValue[config.field!]" />
 </template>
 <script setup lang="ts">
 import { defineProps, defineEmits, PropType } from '@vue/runtime-core';
 import type { RowType } from '../../types/Types';
-
-const emit = defineEmits(['change']);
-let emitChange = () => {
-	emit('change');
-};
 
 defineProps({
 	modelValue: {
