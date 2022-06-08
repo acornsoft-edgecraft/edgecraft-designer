@@ -80,6 +80,10 @@ watch(() => props.data.workerCount, (newVal, oldVal) => {
     }
 })
 
+watch(() => props.data.useCeph, (newVal, oldVal) => {
+    processNodes(ClusterComponentTypes.StorageCluster, 1, !newVal)
+    nextTick(() => { arrangeMembers() })
+})
 
 const onDrop = (event: DragEvent) => {
     // TODO: Drop이 발생한 경우
@@ -96,16 +100,20 @@ onMounted(() => {
     //TODO: 초기 설정 구성
     processNodes(ClusterComponentTypes.Master, props.data.masterCount)
     processNodes(ClusterComponentTypes.Worker, props.data.workerCount)
+    if (props.data?.useCeph) {
+        processNodes(ClusterComponentTypes.StorageCluster, 1)
+    }
 
     nextTick(() => {
-        arrangeMembers()
         const currNode = store.nodes.find(n => n.id === props.id)
         currNode.nodeElement = props.nodeElement;
+        arrangeMembers()
     })
 })
 
 onBeforeUnmount(() => {
     // 자식 구성 요소 모두 제거
+    store.applyEdgeChanges(store.edges.filter(e => e.source === props.id || e.target === props.id).map(item => ({ id: item.id, type: 'remove' })))
     store.applyNodeChanges(store.nodes.filter(n => n.parentNode === props.id).map(item => ({ id: item.id, type: 'remove' })))
 })
 </script>
