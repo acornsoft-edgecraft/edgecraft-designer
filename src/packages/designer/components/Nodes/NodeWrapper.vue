@@ -92,7 +92,9 @@ store.updateNodePosition({ id: node.value.id, diff: { x: 0, y: 0 } })
 
 const slots = inject(Slots)
 
-const name = ref(node.value.type ?? 'default')
+//const name = ref(node.value.type ?? 'default')
+// MOD: MemberNode to default
+const name = ref(node.value.type ?? 'member')
 watch(
   () => node.value.type,
   (v) => v && (name.value = v),
@@ -114,9 +116,12 @@ const type = computed(() => {
 
   const slot = slots?.[`node-${name.value}`]
   if (!slot?.({})) {
-    console.warn(`[vueflow]: Node type "${node.value.type}" not found and no node-slot detected. Using fallback type "default".`)
-    name.value = 'default'
-    return store.getNodeTypes.default
+    // console.warn(`[vueflow]: Node type "${node.value.type}" not found and no node-slot detected. Using fallback type "default".`)
+    // name.value = 'default'
+    // return store.getNodeTypes.default
+    // MOD: MemberNode as default
+    name.value = 'member'
+    return store.getNodeTypes.member
   }
 
   return slot

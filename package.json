@@ -8,8 +8,8 @@
     "preview": "nuxt preview"
   },
   "peerDependencies": {
-    "vue": "^3.2.33",
-    "vite": "^2.9.9"
+    "vite": "^2.9.9",
+    "vue": "^3.2.33"
   },
   "devDependencies": {
     "@types/d3": "^7.1.0",
