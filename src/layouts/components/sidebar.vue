@@ -1,11 +1,17 @@
 <template>
   <div class="layout-sidebar flex flex-column">
     <div class="logo-container flex flex-row align-items-center justify-content-center">
-      <button class="flex flex-column toggle-button align-items-center mr-5" @click="$emit('toggleMenu')">
+      <button class="flex flex-column toggle-button align-items-center mr-5"
+              @click="$emit('toggleMenu')">
         <i class="fas fa-bars"></i>
       </button>
-      <div class="flex flex-column logo"><Logo /></div>
+      <div class="flex flex-column logo">
+        <Logo />
+      </div>
     </div>
+
+    <NuxtLink to="cloud">Cloud Designer PoC</NuxtLink>
+    <NuxtLink to="cluster">Cluster Designer PoC</NuxtLink>
   </div>
 </template>
 

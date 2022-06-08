@@ -1,30 +1,18 @@
 <template>
   <aside class="comp-bar flex flex-column">
     <K3Panel class="m-1"
-             header="Cloud Types"
+             header="Cluster Components"
              :toggleable="true">
       <div class="flex comp-container flex-row mt-2 mb-2"
            :draggable="true"
-           @dragstart="(event: DragEvent) => onDragStart(event, ClusterComponentTypes.BaremetalCloud)">
+           @dragstart="(event: DragEvent) => onDragStart(event, ClusterComponentTypes.CAPI)">
         <div class="comp-image">
           <img class="icon"
-               src="/images/designer/bmcloud.png"
+               src="/images/designer/kubernetes.png"
                draggable=false />
         </div>
         <div class="comp-detail">
-          <h6>Baremetal Cloud</h6>
-        </div>
-      </div>
-      <div class="flex comp-container flex-row mt-2 mb-2"
-           :draggable="true"
-           @dragstart="(event: DragEvent) => onDragStart(event, ClusterComponentTypes.OpenstackCloud)">
-        <div class="comp-image">
-          <img class="icon"
-               src="/images/designer/oscloud.png"
-               draggable=false />
-        </div>
-        <div class="comp-detail">
-          <h6>Openstack Cloud</h6>
+          <h6>Openstack Kubernetes Cluster</h6>
         </div>
       </div>
     </K3Panel>

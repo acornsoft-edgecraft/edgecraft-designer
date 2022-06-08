@@ -1,4 +1,4 @@
-<template>
+getNewNodeInfo<template>
   <div class="page-container">
     <suspense timeout="0">
       <template #default>
@@ -10,7 +10,7 @@
             <!-- Content here -->
             <div class="designer-pane flex-grow-1 flex flex-row"
                  @drop="onDrop">
-              <K3DesignerInfraCompBar class="flex-none" />
+              <K3DesignerClusterCompBar class="flex-none" />
               <VueFlow class="designer"
                        @dragover="onDragOver"
                        @pane-ready="onLoad"
@@ -50,19 +50,17 @@
 
 <script setup lang="ts">
 import {
-  VueFlow, MiniMap, Controls, Background, Node, Edge, FlowEvents, FlowInstance, SmoothStepEdge, XYPosition, updateEdge, useVueFlow, useDesignerHelper,
+  VueFlow, MiniMap, Controls, Background, Node, Edge, FlowEvents, FlowInstance, SmoothStepEdge, XYPosition, updateEdge, useVueFlow,
   CloudType, ClusterComponentTypes, getNewNode, getMousePosition, addExternalNodesForCluster, getSelectedNodeSchema
 } from "~/packages/designer";
 
 import { SchemaType } from "~/packages/liveform";
-const { instance, onConnect, store } = useVueFlow({
+
+const { instance, onConnect, store, } = useVueFlow({
   fitViewOnInit: true,
   edgeTypes: { default: SmoothStepEdge },
   edgesUpdatable: true
 });
-
-// Helper 초기화
-useDesignerHelper(store, "")
 
 /**
  * 여기서는 해당 화면 생성 이전에 처리할 설정을 구성합니다.
@@ -70,7 +68,7 @@ useDesignerHelper(store, "")
  */
 // imports
 // Page meta
-definePageMeta({ layout: "default", title: "CLOUD Designer PoC", public: false });
+definePageMeta({ layout: "default", title: "CLUSTER Designer PoC", public: false });
 // Props
 // Emits
 // Properties
@@ -90,8 +88,8 @@ const getPosition = (event) => {
   return pos;
 };
 const checkAllowedNodes = (nodeType: string): boolean => {
-  // 이미 Cloud 노드가 존재하는지 여부
-  if (nodeType.endsWith('cloud') && store.nodes.some(n => n.type === 'cloud')) {
+  // 이미 Cluster 노드가 존재하는지 여부
+  if (nodeType.endsWith('capi') && store.nodes.some(n => n.type === 'capi')) {
     return false;
   }
 
@@ -123,19 +121,17 @@ const onDrop = (event: DragEvent) => {
       store.addNodes([node]);
 
       // 추가된 Node에 해당하는 후 작업 처리
-      if (node.type === 'cloud') {
-        nextTick(() => {
-          // Cluster에 연계할 Registry 추가
-          addExternalNodesForCluster(ClusterComponentTypes.Registry, node.position)
-          // Cluster에 연계할 External L/B 추가
-          addExternalNodesForCluster(ClusterComponentTypes.LoadBalancer, node.position)
-          // Openstack Case
-          if (node.data.cloudType === CloudType.Openstack) {
-            // Cluster에 연계할 Ceph Storage Cluster 추가
-            addExternalNodesForCluster(ClusterComponentTypes.StorageCluster, node.position)
-          }
-        })
-      }
+      nextTick(() => {
+        // Cluster에 연계할 Registry 추가
+        addExternalNodesForCluster(ClusterComponentTypes.Registry, node.position)
+        // Cluster에 연계할 External L/B 추가
+        addExternalNodesForCluster(ClusterComponentTypes.LoadBalancer, node.position)
+        // Openstack Case
+        if (node.data.cloudType === CloudType.Openstack) {
+          // Cluster에 연계할 Ceph Storage Cluster 추가
+          addExternalNodesForCluster(ClusterComponentTypes.StorageCluster, node.position)
+        }
+      })
     } else {
       // TODO: Message
       alert('Not Allowed')

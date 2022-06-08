@@ -19,13 +19,9 @@ import {
   SimpleBezierEdge,
   //MOD: 신규 노드 추가
   CloudNode,
-  MasterNode,
-  WorkerNode,
-  RegistryNode,
-  LoadbalancerNode,
-  ETCDClusterNode,
-  StorageServerNode,
-  StorageClusterNode
+  CAPINode,
+  MemberNode,
+  MachineSetNode,
 } from '../components'
 
 // MOD: 기본으로 사용할 노드 추가
@@ -35,13 +31,9 @@ export const defaultNodeTypes: DefaultNodeTypes = {
   output: OutputNode,
   //MOD: 기본 노드 추가
   cloud: CloudNode,
-  master: MasterNode,
-  worker: WorkerNode,
-  registry: RegistryNode,
-  loadbalancer: LoadbalancerNode,
-  etcdcluster: ETCDClusterNode,
-  storageserver: StorageServerNode,
-  storagecluster: StorageClusterNode
+  capi: CAPINode,
+  member: MemberNode,
+  machineset: MachineSetNode,
 }
 
 export const defaultEdgeTypes: DefaultEdgeTypes = {

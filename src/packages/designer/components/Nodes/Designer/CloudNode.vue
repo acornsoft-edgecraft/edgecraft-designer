@@ -21,15 +21,65 @@
 
 <script setup lang="ts">
 
-import { Position, GraphNode, ClusterComponentTypes, useVueFlow } from "../../../index";
+import { Position, ClusterComponentTypes, useVueFlow } from "../../../index";
 import Handle from "../../Handle/Handle.vue";
 import type { NodeProps } from "../../../types/node";
-import { useCloudHelper } from "../../../composables";
+import { sleep, useDesignerHelper } from "../../../composables";
 
 const props = defineProps<NodeProps>()
 const { onNodeDragStop, instance, store } = useVueFlow();
 
-const { processNodes, arrangeMembers } = useCloudHelper(store, props.id)
+const { masters, processNodes, arrangeMembers } = useDesignerHelper(store, props.id)
+
+const watchIgnores = ref({ master: false, worker: false })
+
+watch(() => props.data.masterCount, (newVal, oldVal) => {
+    // 삭제되는 경우 제외
+    if (newVal < 1) {
+        // TODO: Message 처리
+        alert('Master 갯수 확인')
+        watchIgnores.value.master = true
+        props.data.masterCount = oldVal;
+        return;
+    }
+
+    if (!watchIgnores.value.master) {
+        processNodes(ClusterComponentTypes.Master, oldVal, true)
+        processNodes(ClusterComponentTypes.Master, newVal)
+        nextTick(() => { arrangeMembers() })
+    } else {
+        watchIgnores.value.master = false
+    }
+})
+
+watch(() => props.data.useExternalETCD, (newVal, oldVal) => {
+    masters.value.forEach(m => {
+        m.data.hasETCD = !newVal
+    })
+
+    processNodes(ClusterComponentTypes.ETCDCluster, 1, !newVal)
+    nextTick(() => { arrangeMembers() })
+})
+
+watch(() => props.data.workerCount, (newVal, oldVal) => {
+    if (newVal < 1) {
+        // TODO: Message 처리
+        alert('Worker 갯수 확인')
+        watchIgnores.value.worker = true
+        props.data.workerCount = oldVal;
+        return;
+    }
+
+    if (!watchIgnores.value.worker) {
+        processNodes(ClusterComponentTypes.Worker, oldVal, true)
+        sleep(200)
+        processNodes(ClusterComponentTypes.Worker, newVal)
+        nextTick(() => { arrangeMembers() })
+    } else {
+        watchIgnores.value.worker = false
+    }
+})
+
 
 const onDrop = (event: DragEvent) => {
     // TODO: Drop이 발생한 경우

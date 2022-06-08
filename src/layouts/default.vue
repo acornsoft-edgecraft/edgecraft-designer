@@ -1,15 +1,20 @@
 <template>
-  <div :class="containerClass" @click="onWrapperClick" @toggle-menu="onToggleMenu">
-    <Sidebar @click="onSidebarClick" @menuitem-click="onMenuItemClick" />
+  <div :class="containerClass"
+       @click="onWrapperClick"
+       @toggle-menu="onToggleMenu">
+    <Sidebar @click="onSidebarClick"
+             @menuitem-click="onMenuItemClick" />
     <div class="main-wrapper flex flex-column flex-1">
-      <Header />
+      <HeaderBar />
       <div class="layout-main">
         <slot />
       </div>
-      <Footer />
-      <Config :layoutMode="layoutMode" @layout-change="onLayoutChange" />
+      <FooterBar />
+      <Config :layoutMode="layoutMode"
+              @layout-change="onLayoutChange" />
       <transition name="layout-mask">
-        <div v-if="mobileMenuActive" class="layout-mask p-component-overlay"></div>
+        <div v-if="mobileMenuActive"
+             class="layout-mask p-component-overlay"></div>
       </transition>
     </div>
   </div>
@@ -21,8 +26,8 @@
  * this 등의 사용이 불가능합니다.
  */
 // imports
-import Footer from "./components/footer.vue";
-import Header from "./components/header.vue";
+import FooterBar from "./components/footerbar.vue";
+import HeaderBar from "./components/headerbar.vue";
 import Sidebar from "./components/sidebar.vue";
 import Config from "./components/config.vue";
 // Page meta
@@ -81,4 +86,5 @@ const onMenuItemClick = (event) => {
 // Logics (like api call, etc)
 </script>
 
-<style scoped lang="scss"></style>
+<style scoped lang="scss">
+</style>

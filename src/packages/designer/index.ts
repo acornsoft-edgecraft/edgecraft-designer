@@ -46,3 +46,7 @@ export { default as useHandle } from './composables/useHandle'
 
 export * from './additional-components'
 export * from './types'
+export * from './components/UserSelection/utils';
+
+// useCloudHelper
+export * from './composables/useDesignerHelper'
