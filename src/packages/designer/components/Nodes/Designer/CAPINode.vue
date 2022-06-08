@@ -56,6 +56,7 @@ onMounted(() => {
 
 onBeforeUnmount(() => {
     // 자식 구성 요소 모두 제거
+    store.applyEdgeChanges(store.edges.filter(e => e.source === props.id || e.target === props.id).map(item => ({ id: item.id, type: 'remove' })))
     store.applyNodeChanges(store.nodes.filter(n => n.parentNode === props.id).map(item => ({ id: item.id, type: 'remove' })))
 })
 </script>

@@ -73,24 +73,21 @@ const defaultPrivateAddr = "192.168.100.100"
 // - Public IP  (개별 지정)
 
 /**
- * Master Node 기준 정보
- */
-
-/**
- * Worker Node 기준 정보
- */
-
-
-/**
  * External Storage Node 기준 정보
  */
 
 // - Type (NAS/NFS) - Single 서버
 // - CEPH - 클러스터
 
-/**
- * Registry Node 기준 정보
- */
+// TODO: Openstack과 연계하는 방법은?
+// - 소스 > OS Image
+// - Flavor > VCPU, RAM, DISK
+export interface SpecData {
+    osImage: string
+    cpu: string
+    memory: string
+    disk: string
+}
 
 export interface NodeData extends ElementData {
     name: String
@@ -98,6 +95,11 @@ export interface NodeData extends ElementData {
 
 export interface MemberData extends NodeData {
     privateAddr: String
+}
+
+export interface MachineSetData extends NodeData {
+    memberCount: Number
+    spec: SpecData
 }
 
 export interface MasterData extends MemberData { }
@@ -122,24 +124,44 @@ export interface CAPIData extends ClusterCommonData {
     useBastion: Boolean         // Bastion Server 여부 (Openstack)
 }
 
-export interface CloudData extends NodeData {
+export interface CloudData extends ClusterCommonData {
     cloudType: CloudType
     masterCount: Number
     workerCount: Number         // TODO: openstack 갯수 감안 (필수 여부)
 }
 
-
+export interface OSCloudData extends CloudData {
+    useCeph: Boolean
+}
 
 // Openstack cluseter api 검색 필요.
 // Private / Public Network 연결고리 bastion server 
 
 export const getDefaultCloudData = (options?: Partial<CloudData>): CloudData => {
     const defaults = {
-        name: `${CloudType.Baremetal.charAt(0).toUpperCase() + CloudType.Baremetal.slice(1)} Cluster`,
+        name: 'Baremetal Cloud',
         cloudType: CloudType.Baremetal,
         masterCount: 1,
         workerCount: 3,
         useExternalETCD: false,
+        serviceCIDR: '192.168.1.0/24',
+        podCIDR: '192.168.2.0/24'
+    }
+
+    return {
+        ...defaults,
+        ...options
+    };
+}
+
+export const getDefaultOSCloudData = (options?: Partial<OSCloudData>): OSCloudData => {
+    const defaults = {
+        name: 'Openstack Cloud',
+        cloudType: CloudType.Openstack,
+        masterCount: 1,
+        workerCount: 3,
+        useExternalETCD: false,
+        useCeph: true,
         serviceCIDR: '192.168.1.0/24',
         podCIDR: '192.168.2.0/24'
     }
@@ -155,6 +177,8 @@ export const getDefaultCAPIData = (options?: Partial<CAPIData>): CAPIData => {
         name: `Kubernetes Cluster`,
         useExternalETCD: false,
         useBastion: true,
+        masterSetCount: 1,
+        workerSetCount: 1,
         serviceCIDR: '192.168.1.0/24',
         podCIDR: '192.168.2.0/24'
     }
@@ -163,6 +187,21 @@ export const getDefaultCAPIData = (options?: Partial<CAPIData>): CAPIData => {
         ...defaults,
         ...options
     }
+}
+
+export const getDefaultMachineSetData = (options?: Partial<MachineSetData>): MachineSetData => {
+    const defaults = {
+        name: 'MachineSet',
+        memberCount: 1,
+        spec: {
+            osImage: 'centos8',
+            cpu: '4',
+            memory: '8GB',
+            disk: '80GB'
+        }
+    }
+
+    return { ...defaults, ...options }
 }
 
 
@@ -283,6 +322,24 @@ export const ETCDClusterDataRows = [...MemberDataRows]
 export const CAPIDataRows = [
     NodeDataRows,
     {
+        type: 'number',
+        readonly: false,
+        field: 'masterSetCount',
+        label: 'Masters'
+    },
+    {
+        type: 'number',
+        readonly: false,
+        field: 'workerSetCount',
+        label: 'Workers'
+    },
+    {
+        type: 'checkbox',
+        readonly: ['masterCount', '==', 1],
+        field: 'useExternalETCD',
+        label: 'External ETCD'
+    },
+    {
         type: 'cidr',
         readonly: false,
         field: 'serviceCIDR',
@@ -323,6 +380,13 @@ export const CloudDataRows = [
         label: 'External ETCD'
     },
     {
+        type: 'checkbox',
+        readonly: false,
+        field: 'useCeph',
+        label: 'Use Ceph',
+        criteria: ['cloudType', '==', CloudType.Openstack]
+    },
+    {
         type: 'cidr',
         readonly: false,
         field: 'serviceCIDR',
@@ -334,32 +398,6 @@ export const CloudDataRows = [
         field: 'podCIDR',
         label: 'Pod CIDR',
     },
-
-
-    // {
-    //     type: 'radio',
-    //     readonly: false,
-    //     field: 'radioTest',
-    //     label: 'Radio Test',
-    //     optionLabel: 'name',
-    //     optionValue: 'value',
-    //     options: 'simpleOptions'
-    // },
-    // {
-    //     type: 'select',
-    //     readonly: false,
-    //     field: 'selectTest',
-    //     label: 'Select Test',
-    //     optionLabel: 'name',
-    //     optionValue: 'value',
-    //     options: 'simpleOptions'
-    // },
-    // {
-    //     type: 'textarea',
-    //     readonly: false,
-    //     field: 'textareaTest',
-    //     label: 'TextArea Test'
-    // },
 ]
 
 

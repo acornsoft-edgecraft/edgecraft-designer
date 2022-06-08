@@ -2,7 +2,7 @@ import { handleParentResizing } from '../utils'
 import {
     Store, Node, GraphNode, ClusterComponentTypes, Position, XYPosition,
     WorkerRoles, CloudType, ids,
-    getDefaultCloudData, getDefaultCAPIData, getDefaultMasterData, getDefaultWorkerData, getDefaultLoadBalancerData, getDefaultRegistryData,
+    getDefaultCloudData, getDefaultOSCloudData, getDefaultCAPIData, getDefaultMasterData, getDefaultWorkerData, getDefaultLoadBalancerData, getDefaultRegistryData,
     getDefaultStorageServerData, getDefaultStorageClusterData, getDefaultETCDClusterData,
     MasterDataRows, WorkerDataRows, RegistryDataRows, LoadbalancerDataRows, StorageClusterDataRows, StorageServerDataRows, ETCDClusterDataRows, CAPIDataRows, CloudDataRows
 } from '../types'
@@ -19,6 +19,7 @@ const masters = computed(() => store.value?.nodes.filter(n => n.parentNode === c
 const workers = computed(() => store.value?.nodes.filter(n => n.parentNode === clusterId.value && (n.type === ClusterComponentTypes.Worker)))
 const haProxy = computed(() => store.value?.nodes.filter(n => n.parentNode === clusterId.value && n.type === ClusterComponentTypes.LoadBalancer)[0]!)
 const etcdCluster = computed(() => store.value?.nodes.filter(n => n.parentNode === clusterId.value && n.type === ClusterComponentTypes.ETCDCluster)[0]!)
+const storageCluster = computed(() => store.value?.nodes.filter(n => n.parentNode === clusterId.value && n.type === ClusterComponentTypes.StorageCluster)[0]!)
 const isMasterHA = computed(() => clusterNode.value.data.masterCount > 1)
 
 const defaultNodePosition = { x: 20, y: 40 }
@@ -69,12 +70,8 @@ export const getNewNode = (nodeType: ClusterComponentTypes, setId: boolean = tru
         case ClusterComponentTypes.OpenstackCloud:
             node.type = 'cloud'
             node.label = `${nodeType === ClusterComponentTypes.BaremetalCloud ? 'Baremetal' : 'Openstack'} Cloud`;
-            node.data = getDefaultCloudData()
+            node.data = nodeType === ClusterComponentTypes.BaremetalCloud ? getDefaultCloudData() : getDefaultOSCloudData()
             node.data.name = node.label;
-            node.data.cloudType = nodeType === ClusterComponentTypes.BaremetalCloud ? CloudType.Baremetal : CloudType.Openstack;
-            node.data.masterCount = 1;
-            node.data.workerCount = 3;
-            node.data.useExternalETCD = false
             node.style = defaultClusterStyle
             break;
         case ClusterComponentTypes.CAPI:
@@ -181,7 +178,7 @@ export const getSelectedNodeSchema = () => {
 
     if (isSelected) {
         const node = store.value.getSelectedNodes[0];
-        console.log(`clicked: ${node.type}`)
+
         switch (node.type) {
             case ClusterComponentTypes.Master:
                 rows = MasterDataRows
@@ -243,8 +240,6 @@ export const useDesignerHelper = (designerStore: Store, cId: string) => {
                 newEdges.push({ id, source: masters.value[0].id, target: w.id, sourceHandle: 'bottom', targetHandle: 'top' })
             }
         })
-
-        console.log(`Edge Worker to Master >> ${JSON.stringify(newEdges)}`)
     }
     const connectWorkerToLB = (newEdges: any[]) => {
         if (haProxy.value) {
@@ -261,6 +256,15 @@ export const useDesignerHelper = (designerStore: Store, cId: string) => {
             const id = `${etcdCluster.value.id}-${m.id}`
             if (!checkEdgeExist(m, etcdCluster.value)) {
                 newEdges.push({ id, source: etcdCluster.value.id, target: m.id, sourceHandle: 'bottom', targetHandle: 'top' })
+            }
+        })
+    }
+
+    const connectStorageClusterToWorker = (newEdges: any[]) => {
+        workers.value.forEach(w => {
+            const id = `${storageCluster.value.id}-${w.id}`
+            if (!checkEdgeExist(w, storageCluster.value)) {
+                newEdges.push({ id, source: w.id, target: storageCluster.value.id, sourceHandle: 'bottom', targetHandle: 'top' })
             }
         })
     }
@@ -376,9 +380,15 @@ export const useDesignerHelper = (designerStore: Store, cId: string) => {
                 } else {
                     connectWorkerToMaster(newEdges)
                 }
+                if (storageCluster.value) {
+                    connectStorageClusterToWorker(newEdges)
+                }
                 break;
             case ClusterComponentTypes.ETCDCluster:
                 connectMasterToETCD(newEdges)
+                break;
+            case ClusterComponentTypes.StorageCluster:
+                connectStorageClusterToWorker(newEdges)
                 break;
         }
 
@@ -450,9 +460,20 @@ export const useDesignerHelper = (designerStore: Store, cId: string) => {
             if (itemPos.maxHeight < w.dimensions.height) itemPos.maxHeight = w.dimensions.height
             itemPos.x += w.dimensions.width + pos.xGap
         })
+        pos.y += itemPos.maxHeight + pos.yGap
+        pos.layer++
+
+        // layer #5 : Storage Cluster (CEPH)
+        if (storageCluster.value) {
+            storageCluster.value.position.x = pos.x
+            storageCluster.value.position.y = pos.y
+
+            pos.layer++
+            pos.y += storageCluster.value.dimensions.height + pos.yGap
+        }
 
         nextTick(() => {
-            // 많은 수를 기준으로 Parent Size 재 구성
+            // 많은 수를 기준으로 Parent Width 재 구성
             if (masters.value.length > workers.value.length) {
                 handleParentResizing(masters.value[masters.value.length - 1], store.value?.nodes)
             } else {
@@ -460,6 +481,11 @@ export const useDesignerHelper = (designerStore: Store, cId: string) => {
                 // const largeWorker = workers.value.reduce((p, c) => (p.dimensions.height >= c.dimensions.height) ? p : c)
                 // handleParentResizing(largeWorker, store.value?.nodes)
                 handleParentResizing(workers.value[workers.value.length - 1], store.value?.nodes)
+            }
+
+            // 제일 마지막 항목을 기준으로 Parent Height 재 구성
+            if (storageCluster.value) {
+                handleParentResizing(storageCluster.value, store.value?.nodes)
             }
 
             sleep(200)
@@ -471,72 +497,70 @@ export const useDesignerHelper = (designerStore: Store, cId: string) => {
         const nodeGap = 50;
         const arrangeNodes = { top: [], right: [], bottom: [], left: [] }
 
-        nextTick(() => {
-            const edges = store.value?.edges.filter(e => e.targetNode === clusterNode.value);
-            edges.forEach(e => {
-                const targetInfo = { node: e.sourceNode, clusterPosition: e.targetHandle as Position }
+        const edges = store.value?.edges.filter(e => e.targetNode === clusterNode.value);
+        edges.forEach(e => {
+            const targetInfo = { node: e.sourceNode, clusterPosition: e.targetHandle as Position }
 
-                switch (targetInfo.clusterPosition) {
-                    case Position.Top:
-                        targetInfo.node.position.y = clusterNode.value.position.y - nodeGap;
-                        arrangeNodes.top.push(targetInfo.node)
-                        break;
-                    case Position.Right:
-                        targetInfo.node.position.x = clusterNode.value.position.x + clusterNode.value.dimensions.width + nodeGap;
-                        arrangeNodes.right.push(targetInfo.node)
-                        break;
-                    case Position.Bottom:
-                        targetInfo.node.position.y = clusterNode.value.position.y + clusterNode.value.dimensions.height + nodeGap;
-                        arrangeNodes.bottom.push(targetInfo.node)
-                        break;
-                    case Position.Left:
-                        targetInfo.node.position.x = clusterNode.value.position.x - nodeGap;
-                        arrangeNodes.left.push(targetInfo.node)
-                        break;
-                }
-            })
-
-            if (arrangeNodes.top.length > 0) {
-                const totalWidth = arrangeNodes.top.reduce((partSum, x) => partSum + x.dimensions.width, 0)
-                const xGap = (clusterNode.value.dimensions.width - totalWidth) / (arrangeNodes.top.length + 1)
-                let pos = clusterNode.value.position.x
-                arrangeNodes.top.forEach((t, i) => {
-                    pos += xGap
-                    t.position.x = pos
-                    pos += t.dimensions.width
-                })
-            }
-            if (arrangeNodes.right.length > 0) {
-                const totalHeight = arrangeNodes.right.reduce((partSum, y) => partSum + y.dimensions.height, 0)
-                const yGap = (clusterNode.value.dimensions.height - totalHeight) / (arrangeNodes.right.length + 1)
-                let pos = clusterNode.value.position.y
-                arrangeNodes.right.forEach((r, i) => {
-                    pos += yGap
-                    r.position.y = pos
-                    pos += r.dimensions.height
-                })
-            }
-            if (arrangeNodes.bottom.length > 0) {
-                const totalWidth = arrangeNodes.bottom.reduce((partSum, x) => partSum + x.dimensions.width, 0)
-                const xGap = (clusterNode.value.dimensions.width - totalWidth) / (arrangeNodes.bottom.length + 1)
-                let pos = clusterNode.value.position.x
-                arrangeNodes.bottom.forEach((b, i) => {
-                    pos += xGap
-                    b.position.x = pos
-                    pos += b.dimensions.width
-                })
-            }
-            if (arrangeNodes.left.length > 0) {
-                const totalHeight = arrangeNodes.left.reduce((partSum, y) => partSum + y.dimensions.height, 0)
-                const yGap = (clusterNode.value.dimensions.height - totalHeight) / (arrangeNodes.left.length + 1)
-                let pos = clusterNode.value.position.y
-                arrangeNodes.left.forEach((l, i) => {
-                    pos += yGap
-                    l.position.y = pos
-                    pos += l.dimensions.height
-                })
+            switch (targetInfo.clusterPosition) {
+                case Position.Top:
+                    targetInfo.node.position.y = clusterNode.value.position.y - nodeGap;
+                    arrangeNodes.top.push(targetInfo.node)
+                    break;
+                case Position.Right:
+                    targetInfo.node.position.x = clusterNode.value.position.x + clusterNode.value.dimensions.width + nodeGap;
+                    arrangeNodes.right.push(targetInfo.node)
+                    break;
+                case Position.Bottom:
+                    targetInfo.node.position.y = clusterNode.value.position.y + clusterNode.value.dimensions.height + nodeGap;
+                    arrangeNodes.bottom.push(targetInfo.node)
+                    break;
+                case Position.Left:
+                    targetInfo.node.position.x = clusterNode.value.position.x - nodeGap;
+                    arrangeNodes.left.push(targetInfo.node)
+                    break;
             }
         })
+
+        if (arrangeNodes.top.length > 0) {
+            const totalWidth = arrangeNodes.top.reduce((partSum, x) => partSum + x.dimensions.width, 0)
+            const xGap = (clusterNode.value.dimensions.width - totalWidth) / (arrangeNodes.top.length + 1)
+            let pos = clusterNode.value.position.x
+            arrangeNodes.top.forEach((t, i) => {
+                pos += xGap
+                t.position.x = pos
+                pos += t.dimensions.width
+            })
+        }
+        if (arrangeNodes.right.length > 0) {
+            const totalHeight = arrangeNodes.right.reduce((partSum, y) => partSum + y.dimensions.height, 0)
+            const yGap = (clusterNode.value.dimensions.height - totalHeight) / (arrangeNodes.right.length + 1)
+            let pos = clusterNode.value.position.y
+            arrangeNodes.right.forEach((r, i) => {
+                pos += yGap
+                r.position.y = pos
+                pos += r.dimensions.height
+            })
+        }
+        if (arrangeNodes.bottom.length > 0) {
+            const totalWidth = arrangeNodes.bottom.reduce((partSum, x) => partSum + x.dimensions.width, 0)
+            const xGap = (clusterNode.value.dimensions.width - totalWidth) / (arrangeNodes.bottom.length + 1)
+            let pos = clusterNode.value.position.x
+            arrangeNodes.bottom.forEach((b, i) => {
+                pos += xGap
+                b.position.x = pos
+                pos += b.dimensions.width
+            })
+        }
+        if (arrangeNodes.left.length > 0) {
+            const totalHeight = arrangeNodes.left.reduce((partSum, y) => partSum + y.dimensions.height, 0)
+            const yGap = (clusterNode.value.dimensions.height - totalHeight) / (arrangeNodes.left.length + 1)
+            let pos = clusterNode.value.position.y
+            arrangeNodes.left.forEach((l, i) => {
+                pos += yGap
+                l.position.y = pos
+                pos += l.dimensions.height
+            })
+        }
     }
 
     return {

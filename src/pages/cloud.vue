@@ -51,7 +51,7 @@
 <script setup lang="ts">
 import {
   VueFlow, MiniMap, Controls, Background, Node, Edge, FlowEvents, FlowInstance, SmoothStepEdge, XYPosition, updateEdge, useVueFlow, useDesignerHelper,
-  CloudType, ClusterComponentTypes, getNewNode, getMousePosition, addExternalNodesForCluster, getSelectedNodeSchema
+  ClusterComponentTypes, getNewNode, getMousePosition, addExternalNodesForCluster, getSelectedNodeSchema
 } from "~/packages/designer";
 
 import { SchemaType } from "~/packages/liveform";
@@ -129,11 +129,11 @@ const onDrop = (event: DragEvent) => {
           addExternalNodesForCluster(ClusterComponentTypes.Registry, node.position)
           // Cluster에 연계할 External L/B 추가
           addExternalNodesForCluster(ClusterComponentTypes.LoadBalancer, node.position)
-          // Openstack Case
-          if (node.data.cloudType === CloudType.Openstack) {
-            // Cluster에 연계할 Ceph Storage Cluster 추가
-            addExternalNodesForCluster(ClusterComponentTypes.StorageCluster, node.position)
-          }
+          // // Openstack Case
+          // if (node.data.cloudType === CloudType.Openstack) {
+          //   // Cluster에 연계할 Ceph Storage Cluster 추가
+          //   addExternalNodesForCluster(ClusterComponentTypes.StorageCluster, node.position)
+          // }
         })
       }
     } else {
