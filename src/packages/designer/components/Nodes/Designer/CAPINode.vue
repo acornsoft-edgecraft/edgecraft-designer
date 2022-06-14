@@ -4,6 +4,7 @@ useDesignerHelper<template>
         <component :is="props.label"
                    v-if="typeof props.label !== 'string' && props.label" />
         <span v-html="props.label" />
+        {{ props.data.masterCount }}, {{ props.data.workerCount }}
     </div>
     <Handle id="left"
             type="source"
@@ -24,12 +25,12 @@ useDesignerHelper<template>
 import { Position, ClusterComponentTypes, useVueFlow } from "../../../index";
 import Handle from "../../Handle/Handle.vue";
 import type { NodeProps } from "../../../types/node";
-import { useDesignerHelper } from "../../../composables";
+import { useCAPIHelper } from "../../../composables";
 
 const props = defineProps<NodeProps>()
 const { onNodeDragStop, instance, store } = useVueFlow();
 
-const { processNodes, arrangeMembers } = useDesignerHelper(store, props.id)
+const { capiNode, removeMemberNodes, processNodes, arrangeMembers } = useCAPIHelper(store, props.id)
 
 const onDrop = (event: DragEvent) => {
     // TODO: Drop이 발생한 경우
@@ -44,20 +45,20 @@ onNodeDragStop(({ node }) => {
 
 onMounted(() => {
     //TODO: 초기 설정 구성
-    // processNodes(ClusterComponentTypes.Master, props.data.masterCount)
-    // processNodes(ClusterComponentTypes.Worker, props.data.workerCount)
+    processNodes(ClusterComponentTypes.Bastion, 1)
+    processNodes(ClusterComponentTypes.MasterSet, props.data.masterSetCount)
+    processNodes(ClusterComponentTypes.WorkerSet, props.data.workerSetCount)
+    processNodes(ClusterComponentTypes.StorageCluster, 1)
 
-    // nextTick(() => {
-    //     arrangeMembers()
-    //     const currNode = store.nodes.find(n => n.id === props.id)
-    //     currNode.nodeElement = props.nodeElement;
-    // })
+    nextTick(() => {
+        arrangeMembers()
+        capiNode.value.nodeElement = props.nodeElement
+    })
 })
 
 onBeforeUnmount(() => {
     // 자식 구성 요소 모두 제거
-    store.applyEdgeChanges(store.edges.filter(e => e.source === props.id || e.target === props.id).map(item => ({ id: item.id, type: 'remove' })))
-    store.applyNodeChanges(store.nodes.filter(n => n.parentNode === props.id).map(item => ({ id: item.id, type: 'remove' })))
+    removeMemberNodes()
 })
 </script>
 

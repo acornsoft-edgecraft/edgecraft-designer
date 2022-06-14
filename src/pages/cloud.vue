@@ -21,7 +21,7 @@
                        :edge-updatable="true"
                        :snap-to-grid="true"
                        :snap-grid="[5, 5]">
-                <K3DesignerSaveControls />
+                <K3DesignerManageControls />
                 <Background :gap="5" />
                 <MiniMap />
                 <Controls />
@@ -129,11 +129,6 @@ const onDrop = (event: DragEvent) => {
           addExternalNodesForCluster(ClusterComponentTypes.Registry, node.position)
           // Cluster에 연계할 External L/B 추가
           addExternalNodesForCluster(ClusterComponentTypes.LoadBalancer, node.position)
-          // // Openstack Case
-          // if (node.data.cloudType === CloudType.Openstack) {
-          //   // Cluster에 연계할 Ceph Storage Cluster 추가
-          //   addExternalNodesForCluster(ClusterComponentTypes.StorageCluster, node.position)
-          // }
         })
       }
     } else {

@@ -1,8 +1,9 @@
 <template>
-  <div class="save__controls">
-    <button @click="onSelectAll">select all</button>
-    <button @click="onSave">save</button>
-    <button @click="onRestore">restore</button>
+  <div class="manage__controls">
+    <button @click="onArrange">Rearrange</button>
+    <button @click="onSelectAll">Select all</button>
+    <button @click="onSave">Save</button>
+    <button @click="onRestore">Restore</button>
   </div>
 </template>
 
@@ -12,7 +13,7 @@
  * this 등의 사용이 불가능합니다.
  */
 // imports
-import { useZoomPanHelper, FlowExportObject, useVueFlow } from "~/packages/designer";
+import { useZoomPanHelper, FlowExportObject, useVueFlow, adjustSiblings } from "~/packages/designer";
 // Props
 // const props = defineProps({})
 // Emits
@@ -30,6 +31,10 @@ const state = useStorage<FlowExportObject>(flowKey, {
 // Compputed
 // Watcher
 // Methods
+const onArrange = () => {
+  adjustSiblings()
+}
+
 const onSelectAll = () => {
   addSelectedNodes(getNodes.value)
   nodesSelectionActive.value = true;
@@ -54,15 +59,15 @@ const onRestore = () => {
 </script>
 
 <style scoped lang="scss">
-.save__controls {
+.manage__controls {
   position: absolute;
   right: 10px;
   top: 10px;
   z-index: 4;
   font-size: 12px;
-}
 
-.save__controls button {
-  margin-left: 5px;
+  button {
+    margin-left: 5px;
+  }
 }
 </style>
