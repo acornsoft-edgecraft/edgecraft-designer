@@ -59,7 +59,8 @@
 .vue-flow__node-output,
 .vue-flow__node-cloud,
 .vue-flow__node-capi,
-.vue-flow__node-member {
+.vue-flow__node-member,
+.vue-flow__node-machineset {
   padding: 10px;
   border-radius: 3px;
   // width: 150px;
@@ -88,7 +89,8 @@
 .vue-flow__node-output.selectable,
 .vue-flow__node-cloud.selectable,
 .vue-flow__node-capi.selectable,
-.vue-flow__node-member.selectable {
+.vue-flow__node-member.selectable,
+.vue-flow__node-machineset.selectable {
   &:hover {
     box-shadow: 0 1px 4px 1px rgba(0, 0, 0, 0.08);
   }
@@ -120,7 +122,8 @@
 
 .vue-flow__node-cloud,
 .vue-flow__node-capi,
-.vue-flow__node-member {
+.vue-flow__node-member,
+.vue-flow__node-machineset {
   --vf-node-color: #0041d0;
   --vf-handle: var(--vf-node-color);
   --vf-box-shadow: var(--vf-node-color);

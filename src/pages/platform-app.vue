@@ -68,7 +68,7 @@ const { instance, onConnect, store, } = useVueFlow({
  */
 // imports
 // Page meta
-definePageMeta({ layout: "default", title: "CLUSTER Designer PoC", public: false });
+definePageMeta({ layout: "default", title: "Platform APP Designer PoC", public: false });
 // Props
 // Emits
 // Properties
@@ -126,6 +126,11 @@ const onDrop = (event: DragEvent) => {
         addExternalNodesForCluster(ClusterComponentTypes.Registry, node.position)
         // Cluster에 연계할 External L/B 추가
         addExternalNodesForCluster(ClusterComponentTypes.LoadBalancer, node.position)
+        // Openstack Case
+        if (node.data.cloudType === CloudType.Openstack) {
+          // Cluster에 연계할 Ceph Storage Cluster 추가
+          addExternalNodesForCluster(ClusterComponentTypes.StorageCluster, node.position)
+        }
       })
     } else {
       // TODO: Message

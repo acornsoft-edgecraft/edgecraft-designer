@@ -36,18 +36,20 @@
                draggable="false"
                src="/images/designer/etcd-cluster.png" />
      </div>
-     <Handle id="left"
-             type="source"
-             :position="Position.Left" />
-     <Handle id="top"
-             type="source"
-             :position="Position.Top" />
-     <Handle id="right"
-             type="source"
-             :position="Position.Right" />
-     <Handle id="bottom"
-             type="source"
-             :position="Position.Bottom" />
+     <div v-if="props.connectable">
+          <Handle id="left"
+                  type="source"
+                  :position="Position.Left" />
+          <Handle id="top"
+                  type="source"
+                  :position="Position.Top" />
+          <Handle id="right"
+                  type="source"
+                  :position="Position.Right" />
+          <Handle id="bottom"
+                  type="source"
+                  :position="Position.Bottom" />
+     </div>
 </template>
 
 <script setup lang="ts">
@@ -59,7 +61,7 @@ import type { NodeProps } from "../../../types/node";
 const { store } = useVueFlow()
 
 const props = withDefaults(defineProps<NodeProps>(), {
-     connectable: false
+     connectable: true
 });
 
 const isController = computed(() => props.type === ClusterComponentTypes.Worker && props.data?.workerRole === WorkerRoles.Controller)

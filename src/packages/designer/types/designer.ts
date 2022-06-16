@@ -9,7 +9,8 @@ export enum ClusterComponentTypes {
     BaremetalCloud = 'bmcloud',
     OpenstackCloud = 'oscloud',
     CAPI = 'capi',
-    MachineSet = 'machineset',
+    MasterSet = 'masterset',
+    WorkerSet = 'workerset',
     Master = 'master',
     Worker = 'worker',
     Bastion = 'bastion',
@@ -30,12 +31,17 @@ export enum WorkerRoles {
     Storage = 'storage',            // openstack storage node
     Compute = 'compute',            // openstack compute node (for vm instances)
 }
+export enum MachineSetRoles {
+    Master = 'master',  // Master machineset
+    Worker = 'worker',  // Worker machineset
+}
 
 export const ids = new Map<ClusterComponentTypes, number>([
     [ClusterComponentTypes.BaremetalCloud, 0],
     [ClusterComponentTypes.OpenstackCloud, 0],
     [ClusterComponentTypes.CAPI, 0],
-    [ClusterComponentTypes.MachineSet, 0],
+    [ClusterComponentTypes.MasterSet, 0],
+    [ClusterComponentTypes.WorkerSet, 0],
     [ClusterComponentTypes.Master, 0],
     [ClusterComponentTypes.Worker, 0],
     [ClusterComponentTypes.Bastion, 0],
@@ -82,12 +88,6 @@ const defaultPrivateAddr = "192.168.100.100"
 // TODO: Openstack과 연계하는 방법은?
 // - 소스 > OS Image
 // - Flavor > VCPU, RAM, DISK
-export interface SpecData {
-    osImage: string
-    cpu: string
-    memory: string
-    disk: string
-}
 
 export interface NodeData extends ElementData {
     name: String
@@ -98,15 +98,23 @@ export interface MemberData extends NodeData {
 }
 
 export interface MachineSetData extends NodeData {
+    role: MachineSetRoles
     memberCount: Number
-    spec: SpecData
+    osImage: string
+    cpu: string
+    memory: string
+    disk: string
 }
 
-export interface MasterData extends MemberData { }
+export interface MasterData extends MemberData {
+    hasETCD: Boolean;   // 내부 ETCD 운영 여부
+}
 
 export interface WorkerData extends MemberData {
     workerRole: WorkerRoles     // TODO: role change 검증 (존재 여부 등)
 }
+
+export interface BastionData extends MemberData { }
 
 export interface RegistryData extends MemberData { }
 export interface StorageServerData extends MemberData { }
@@ -116,18 +124,20 @@ export interface LoadBalancerData extends MemberData { }
 
 export interface ClusterCommonData extends NodeData {
     useExternalETCD: Boolean    // false 인 경우는 stacked
+    masterCount: Number         // Master Count, MachineSet인 경우는 hidden, event로 재 설정
+    workerCount: Number         // Worker Count, MachineSet인 경우는 hidden, event로 재 설정
     serviceCIDR: String
     podCIDR: String
 }
 
 export interface CAPIData extends ClusterCommonData {
     useBastion: Boolean         // Bastion Server 여부 (Openstack)
+    masterSetCount: Number,     // Master MachineSet 갯수
+    workerSetCount: Number,     // Worker MachineSet 갯수
 }
 
 export interface CloudData extends ClusterCommonData {
     cloudType: CloudType
-    masterCount: Number
-    workerCount: Number         // TODO: openstack 갯수 감안 (필수 여부)
 }
 
 export interface OSCloudData extends CloudData {
@@ -179,6 +189,8 @@ export const getDefaultCAPIData = (options?: Partial<CAPIData>): CAPIData => {
         useBastion: true,
         masterSetCount: 1,
         workerSetCount: 1,
+        masterCount: 1,
+        workerCount: 3,
         serviceCIDR: '192.168.1.0/24',
         podCIDR: '192.168.2.0/24'
     }
@@ -192,18 +204,25 @@ export const getDefaultCAPIData = (options?: Partial<CAPIData>): CAPIData => {
 export const getDefaultMachineSetData = (options?: Partial<MachineSetData>): MachineSetData => {
     const defaults = {
         name: 'MachineSet',
+        role: MachineSetRoles.Master,
         memberCount: 1,
-        spec: {
-            osImage: 'centos8',
-            cpu: '4',
-            memory: '8GB',
-            disk: '80GB'
-        }
+        osImage: 'centos8',
+        cpu: '4',
+        memory: '8GB',
+        disk: '80GB'
     }
 
     return { ...defaults, ...options }
 }
 
+export const getDefaultBastionData = (options?: Partial<BastionData>): BastionData => {
+    const defaults = {
+        name: 'Bastion',
+        privateAddr: defaultPrivateAddr,
+    }
+
+    return { ...defaults, ...options }
+}
 
 export const getDefaultMasterData = (options?: Partial<MasterData>): MasterData => {
     const defaults = {
@@ -294,14 +313,53 @@ const MemberDataRows = [
         label: 'Private IP'
     }
 ]
+const MachineSetDataRows = [
+    NodeDataRows,
+    {
+        type: 'text',
+        readonly: true,
+        field: 'role',
+        label: 'Role'
+    },
+    {
+        type: 'number',
+        readonly: false,
+        field: 'memberCount',
+        label: 'Machines'
+    },
+    {
+        type: 'text',
+        readonly: false,
+        field: 'osImage',
+        label: 'OS'
+    },
+    {
+        type: 'text',
+        readonly: false,
+        field: 'cpu',
+        label: 'CPU'
+    },
+    {
+        type: 'text',
+        readonly: false,
+        field: 'memory',
+        label: 'Memory'
+    },
+    {
+        type: 'text',
+        readonly: false,
+        field: 'disk',
+        label: 'Disk'
+    },
 
+]
 export const MasterDataRows = [
     ...MemberDataRows,
     {
         type: 'checkbox',
         readonly: true,
         field: 'hasETCD',
-        label: 'Use Local ETCD',
+        label: 'Use internal ETCD'
     }
 ]
 export const WorkerDataRows = [
@@ -313,6 +371,12 @@ export const WorkerDataRows = [
         label: 'Role'
     }
 ]
+export const MasterSetDataRows = [
+    ...MachineSetDataRows,
+]
+export const WorkerSetDataRows = [
+    ...MachineSetDataRows,
+]
 export const RegistryDataRows = [...MemberDataRows]
 export const LoadbalancerDataRows = [...MemberDataRows]
 export const StorageServerDataRows = [...MemberDataRows]
@@ -323,7 +387,7 @@ export const CAPIDataRows = [
     NodeDataRows,
     {
         type: 'number',
-        readonly: false,
+        readonly: true,
         field: 'masterSetCount',
         label: 'Masters'
     },
