@@ -118,24 +118,6 @@ export default {
         align-items: center;
         border-bottom: 1px solid lightgray;
 
-        // input[type='text'],
-        // input[type='password'],
-        // input[type='date'],
-        // input[type='number'],
-        // textarea,
-        // select {
-        //   flex: 1;
-        //   border: none;
-        //   background-color: rgba(255, 255, 255, 0.6);
-        //   border-radius: 8px;
-        //   font-family: inherit;
-        //   font-size: 0.9rem;
-        // }
-
-        // textarea {
-        //   resize: vertical
-        // }
-
         .props-row-label {
           display: flex;
           align-items: center;

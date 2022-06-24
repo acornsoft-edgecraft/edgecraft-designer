@@ -11,6 +11,8 @@ export enum ClusterComponentTypes {
     CAPI = 'capi',
     MasterSet = 'masterset',
     WorkerSet = 'workerset',
+    MasterGroup = 'mastergroup',
+    WorkerGroup = 'workergroup',
     Master = 'master',
     Worker = 'worker',
     Bastion = 'bastion',
@@ -20,7 +22,7 @@ export enum ClusterComponentTypes {
     StorageCluster = 'storagecluster',
     ETCDCluster = 'etcdcluster'
 }
-export enum CloudType {
+export enum CloudTypes {
     Baremetal = 'baremetal',
     Openstack = 'openstack',
 }
@@ -32,6 +34,8 @@ export enum WorkerRoles {
     Compute = 'compute',            // openstack compute node (for vm instances)
 }
 export enum MachineSetRoles {
+    MasterGroup = 'mastergorup',
+    WorkerGroup = 'workergroup',
     Master = 'master',  // Master machineset
     Worker = 'worker',  // Worker machineset
 }
@@ -40,6 +44,8 @@ export const ids = new Map<ClusterComponentTypes, number>([
     [ClusterComponentTypes.BaremetalCloud, 0],
     [ClusterComponentTypes.OpenstackCloud, 0],
     [ClusterComponentTypes.CAPI, 0],
+    [ClusterComponentTypes.MasterGroup, 0],
+    [ClusterComponentTypes.WorkerGroup, 0],
     [ClusterComponentTypes.MasterSet, 0],
     [ClusterComponentTypes.WorkerSet, 0],
     [ClusterComponentTypes.Master, 0],
@@ -52,21 +58,11 @@ export const ids = new Map<ClusterComponentTypes, number>([
     [ClusterComponentTypes.ETCDCluster, 0],
 ])
 
-/**
- * Cluster 기준 정보
- */
-
-// - Master Count (마스터 갯수로 HA 판단)
-// - Worker Count (Worker 노드를 특정한 용도로 사용하는 경우는?)
-// - External ETCD 여부 (별도 ETCD 클러스터 구성, false인 경우 stacked)
-//   - ETCD IP (개별 지정? 아니면 규칙)
-// - External Storage 여부  (연결 정보로 식별)
-//   - Storage IP
-// - Registry 여부  (연결 정보로 식별)
-//   - Registry IP
-// - Network 구성 정보
-//   - service CIDR
-//   - Pod CIDR
+export interface DesignerEvent {
+    readonly type: String,
+    readonly target: String,
+    readonly val: Number | String | Object,
+}
 
 /**
  * Node 공통
@@ -74,16 +70,9 @@ export const ids = new Map<ClusterComponentTypes, number>([
 
 const defaultPrivateAddr = "192.168.100.100"
 
-// - Host Name (개별 지정)
-// - Private IP  (개별 지정)
-// - Public IP  (개별 지정)
-
 /**
  * External Storage Node 기준 정보
  */
-
-// - Type (NAS/NFS) - Single 서버
-// - CEPH - 클러스터
 
 // TODO: Openstack과 연계하는 방법은?
 // - 소스 > OS Image
@@ -97,9 +86,12 @@ export interface MemberData extends NodeData {
     privateAddr: String
 }
 
-export interface MachineSetData extends NodeData {
+export interface MachineGroupData extends NodeData {
     role: MachineSetRoles
     memberCount: Number
+}
+
+export interface MachineSpecData extends MachineGroupData {
     osImage: string
     cpu: string
     memory: string
@@ -123,6 +115,7 @@ export interface ETCDClusterData extends MemberData { }
 export interface LoadBalancerData extends MemberData { }
 
 export interface ClusterCommonData extends NodeData {
+    kubernetesVersion: String
     useExternalETCD: Boolean    // false 인 경우는 stacked
     masterCount: Number         // Master Count, MachineSet인 경우는 hidden, event로 재 설정
     workerCount: Number         // Worker Count, MachineSet인 경우는 hidden, event로 재 설정
@@ -132,25 +125,21 @@ export interface ClusterCommonData extends NodeData {
 
 export interface CAPIData extends ClusterCommonData {
     useBastion: Boolean         // Bastion Server 여부 (Openstack)
-    masterSetCount: Number,     // Master MachineSet 갯수
-    workerSetCount: Number,     // Worker MachineSet 갯수
 }
 
 export interface CloudData extends ClusterCommonData {
-    cloudType: CloudType
+    cloudType: CloudTypes
 }
 
 export interface OSCloudData extends CloudData {
     useCeph: Boolean
 }
 
-// Openstack cluseter api 검색 필요.
-// Private / Public Network 연결고리 bastion server 
-
 export const getDefaultCloudData = (options?: Partial<CloudData>): CloudData => {
     const defaults = {
         name: 'Baremetal Cloud',
-        cloudType: CloudType.Baremetal,
+        cloudType: CloudTypes.Baremetal,
+        kubernetesVersion: '1.24.1',
         masterCount: 1,
         workerCount: 3,
         useExternalETCD: false,
@@ -167,7 +156,8 @@ export const getDefaultCloudData = (options?: Partial<CloudData>): CloudData => 
 export const getDefaultOSCloudData = (options?: Partial<OSCloudData>): OSCloudData => {
     const defaults = {
         name: 'Openstack Cloud',
-        cloudType: CloudType.Openstack,
+        cloudType: CloudTypes.Openstack,
+        kubernetesVersion: '1.24.1',
         masterCount: 1,
         workerCount: 3,
         useExternalETCD: false,
@@ -185,10 +175,9 @@ export const getDefaultOSCloudData = (options?: Partial<OSCloudData>): OSCloudDa
 export const getDefaultCAPIData = (options?: Partial<CAPIData>): CAPIData => {
     const defaults = {
         name: `Kubernetes Cluster`,
+        kubernetesVersion: '1.24.1',
         useExternalETCD: false,
         useBastion: true,
-        masterSetCount: 1,
-        workerSetCount: 1,
         masterCount: 1,
         workerCount: 3,
         serviceCIDR: '192.168.1.0/24',
@@ -201,7 +190,17 @@ export const getDefaultCAPIData = (options?: Partial<CAPIData>): CAPIData => {
     }
 }
 
-export const getDefaultMachineSetData = (options?: Partial<MachineSetData>): MachineSetData => {
+export const getDefaultMachineGroupData = (options?: Partial<MachineGroupData>): MachineGroupData => {
+    const defaults = {
+        name: 'MachineGroup',
+        role: MachineSetRoles.MasterGroup,
+        memberCount: 1,
+    }
+
+    return { ...defaults, ...options }
+}
+
+export const getDefaultMachineSetData = (options?: Partial<MachineSpecData>): MachineSpecData => {
     const defaults = {
         name: 'MachineSet',
         role: MachineSetRoles.Master,
@@ -313,7 +312,8 @@ const MemberDataRows = [
         label: 'Private IP'
     }
 ]
-const MachineSetDataRows = [
+
+const MachineGroupDataRows = [
     NodeDataRows,
     {
         type: 'text',
@@ -321,11 +321,15 @@ const MachineSetDataRows = [
         field: 'role',
         label: 'Role'
     },
+]
+
+const MachineSetDataRows = [
+    ...MachineGroupDataRows,
     {
         type: 'number',
         readonly: false,
         field: 'memberCount',
-        label: 'Machines'
+        label: 'Members'
     },
     {
         type: 'text',
@@ -371,6 +375,24 @@ export const WorkerDataRows = [
         label: 'Role'
     }
 ]
+export const MasterGroupDataRows = [
+    ...MachineGroupDataRows,
+    {
+        type: 'number',
+        readonly: true,
+        field: 'memberCount',
+        label: 'Members'
+    },
+]
+export const WorkerGroupDataRows = [
+    ...MachineGroupDataRows,
+    {
+        type: 'number',
+        readonly: false,
+        field: 'memberCount',
+        label: 'Members'
+    },
+]
 export const MasterSetDataRows = [
     ...MachineSetDataRows,
 ]
@@ -383,25 +405,26 @@ export const StorageServerDataRows = [...MemberDataRows]
 export const StorageClusterDataRows = [...MemberDataRows]
 export const ETCDClusterDataRows = [...MemberDataRows]
 
-export const CAPIDataRows = [
-    NodeDataRows,
+export const ClusterCommonDataRows = [
     {
-        type: 'number',
-        readonly: true,
-        field: 'masterSetCount',
-        label: 'Masters'
+        type: 'text',
+        readonly: false,
+        field: 'kubernetesVersion',
+        label: 'Kubernetes Version'
     },
     {
         type: 'number',
         readonly: false,
-        field: 'workerSetCount',
-        label: 'Workers'
+        field: 'masterCount',
+        label: 'Masters',
+        criteria: ['useBastion', 'exists', false]
     },
     {
-        type: 'checkbox',
-        readonly: ['masterCount', '==', 1],
-        field: 'useExternalETCD',
-        label: 'External ETCD'
+        type: 'number',
+        readonly: false,
+        field: 'workerCount',
+        label: 'Workers',
+        criteria: ['useBastion', 'exists', false]
     },
     {
         type: 'cidr',
@@ -415,6 +438,22 @@ export const CAPIDataRows = [
         field: 'podCIDR',
         label: 'Pod CIDR',
     },
+    {
+        type: 'checkbox',
+        readonly: ['masterCount', '==', 1],
+        field: 'useExternalETCD',
+        label: 'External ETCD'
+    },
+]
+export const CAPIDataRows = [
+    NodeDataRows,
+    ...ClusterCommonDataRows,
+    {
+        type: 'checkbox',
+        readonly: false,
+        field: 'useBastion',
+        label: 'Bastion'
+    }
 ]
 
 export const CloudDataRows = [
@@ -425,130 +464,19 @@ export const CloudDataRows = [
         field: 'cloudType',
         label: 'Cloud Type',
     },
-    {
-        type: 'number',
-        readonly: false,
-        field: 'masterCount',
-        label: 'Masters'
-    },
-    {
-        type: 'number',
-        readonly: false,
-        field: 'workerCount',
-        label: 'Workers'
-    },
-    {
-        type: 'checkbox',
-        readonly: ['masterCount', '==', 1],
-        field: 'useExternalETCD',
-        label: 'External ETCD'
-    },
+    ...ClusterCommonDataRows,
     {
         type: 'checkbox',
         readonly: false,
         field: 'useCeph',
         label: 'Use Ceph',
-        criteria: ['cloudType', '==', CloudType.Openstack]
-    },
-    {
-        type: 'cidr',
-        readonly: false,
-        field: 'serviceCIDR',
-        label: 'Serice CIDR',
-    },
-    {
-        type: 'cidr',
-        readonly: false,
-        field: 'podCIDR',
-        label: 'Pod CIDR',
-    },
+        criteria: ['cloudType', '==', CloudTypes.Openstack]
+    }
 ]
-
-
-
-/**
- * Cloud 구성 요소 데이터 정의
- */
-
-// - Master Count (마스터 갯수로 HA 판단)
-// - Worker Count (Worker 노드를 특정한 용도로 사용하는 경우는?)
-// - Stacked ETCD 여부 (마스터마다 ETCD 구성)
-// - External ETCD 여부 (별도 ETCD 클러스터 구성)
-//   - ETCD IP (개별 지정? 아니면 규칙)
-//   - ETCD 인증서 파일 (cert) - 이미 존재하는 경우만 
-// - External Storage 여부
-//   - Storage IP (개별 지정? 아니면 규칙)
-// - Registry 여부
-//   - Registry IP
-//   - Registry 인증서 파일 (cert)  - 이미 존재하는 경우만 
-// - Network 구성 정보
-//   - Pod CIDR (필수)
-//   - service CIDR (필수)
-
-/**
- * Node 공통
- */
-
-// - Host Name (필수, 개별 지정)
-// - Private IP  (필수, 개별 지정) xxx.xxx.xx.xx
-// - Public IP  (옵션, 개별 지정)
-
-/**
- * Master Node 기준 정보
- */
-
-/**
- * Worker Node 기준 정보
- */
-//  - Role (Openstack fixed)
-
-/**
- * External Storage Node 기준 정보
- */
-// - Type (NAS/NFS) - Single 서버
-// - CEPH - 클러스터
 
 /**
  * Registry Node 기준 정보
  */
-
-
-// TODO: Cluster, Nodes Data 구조 정의
-// export enum CNodeRoles {
-//     Worker = 'worker',
-//     Storage = 'storage',
-// }
-
-// export interface NodeData {
-//     name: String
-// }
-
-// export interface CNodeData extends NodeData {
-//     name: String        // ex. Master1, Worker1, ...
-//     role: CNodeRoles
-// }
-
-// export interface MasterNodeData extends CNodeData {
-//     hasETCD: Boolean
-// }
-
-// export interface WorkerNodeData extends CNodeData {
-//     has
-// }
-
-// export interface CloudData {
-//     name: String
-//     cloudType: CloudType
-//     masterCount: Number
-//     workerCount: Number
-//     useMasterHA: Boolean
-//     useExternalETCD: Boolean
-//     useInternalLB: Boolean
-// }
-
-// TODO: useMasterHA - MasterCount 검증 (minimum 3)
-// TODO: useExternalETCD - ETCD Cluster 검증, 아닌 경우 내부 ETCD (어떻게 표현할 것인지)
-// TODO: useInternalLB: Master HA 필수
 
 //** Validation
 // - 설치 검증 확인용 <<< 현재 firewall open (port), ping, disk mount 분리 여부 (root, another, ...) <<< 제안서 ....

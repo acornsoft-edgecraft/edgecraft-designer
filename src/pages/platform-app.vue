@@ -1,4 +1,4 @@
-getNewNodeInfo<template>
+CloudTypesgetNewNodeInfo<template>
   <div class="page-container">
     <suspense timeout="0">
       <template #default>
@@ -51,7 +51,7 @@ getNewNodeInfo<template>
 <script setup lang="ts">
 import {
   VueFlow, MiniMap, Controls, Background, Node, Edge, FlowEvents, FlowInstance, SmoothStepEdge, XYPosition, updateEdge, useVueFlow,
-  CloudType, ClusterComponentTypes, getNewNode, getMousePosition, addExternalNodesForCluster, getSelectedNodeSchema
+  CloudTypes, ClusterComponentTypes, Helper, getMousePosition
 } from "~/packages/designer";
 
 import { SchemaType } from "~/packages/liveform";
@@ -97,7 +97,7 @@ const checkAllowedNodes = (nodeType: string): boolean => {
 }
 
 const onClick = () => {
-  const { rows, data: nodeData } = getSelectedNodeSchema()
+  const { rows, data: nodeData } = Helper.getSelectedNodeSchema()
   schema.value.rows = rows
   data.value = nodeData
 };
@@ -113,29 +113,6 @@ const onDragOver = (event: DragEvent) => {
 // Add new node on drag-stop event.
 const onDrop = (event: DragEvent) => {
   if (instance.value) {
-    const nodeType = event.dataTransfer?.getData("application/vueflow") as ClusterComponentTypes
-    if (checkAllowedNodes(nodeType)) {
-      const node = getNewNode(nodeType)
-      node.position = getPosition(event);
-
-      store.addNodes([node]);
-
-      // 추가된 Node에 해당하는 후 작업 처리
-      nextTick(() => {
-        // Cluster에 연계할 Registry 추가
-        addExternalNodesForCluster(ClusterComponentTypes.Registry, node.position)
-        // Cluster에 연계할 External L/B 추가
-        addExternalNodesForCluster(ClusterComponentTypes.LoadBalancer, node.position)
-        // Openstack Case
-        if (node.data.cloudType === CloudType.Openstack) {
-          // Cluster에 연계할 Ceph Storage Cluster 추가
-          addExternalNodesForCluster(ClusterComponentTypes.StorageCluster, node.position)
-        }
-      })
-    } else {
-      // TODO: Message
-      alert('Not Allowed')
-    }
   }
 };
 const onPropsChanged = (propsData) => {

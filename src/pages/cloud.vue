@@ -21,7 +21,7 @@
                        :edge-updatable="true"
                        :snap-to-grid="true"
                        :snap-grid="[5, 5]">
-                <K3DesignerManageControls />
+                <K3DesignerManageControls @arrange="onArrange" />
                 <Background :gap="5" />
                 <MiniMap />
                 <Controls />
@@ -50,19 +50,16 @@
 
 <script setup lang="ts">
 import {
-  VueFlow, MiniMap, Controls, Background, Node, Edge, FlowEvents, FlowInstance, SmoothStepEdge, XYPosition, updateEdge, useVueFlow, useDesignerHelper,
-  ClusterComponentTypes, getNewNode, getMousePosition, addExternalNodesForCluster, getSelectedNodeSchema
+  VueFlow, MiniMap, Controls, Background, Edge, FlowEvents, FlowInstance, SmoothStepEdge, XYPosition, updateEdge, ClusterComponentTypes, Helper, getMousePosition
 } from "~/packages/designer";
-
 import { SchemaType } from "~/packages/liveform";
-const { instance, onConnect, store } = useVueFlow({
+
+// Designer 초기화
+const { instance, onConnect, store } = Helper.initialize({
   fitViewOnInit: true,
   edgeTypes: { default: SmoothStepEdge },
   edgesUpdatable: true
-});
-
-// Helper 초기화
-useDesignerHelper(store, "")
+})
 
 /**
  * 여기서는 해당 화면 생성 이전에 처리할 설정을 구성합니다.
@@ -74,32 +71,24 @@ definePageMeta({ layout: "default", title: "CLOUD Designer PoC", public: false }
 // Props
 // Emits
 // Properties
-let id = 0;
-const getId = () => `dndnode_${id++}`;
-const schema = ref<SchemaType>({
-  labelWidth: "150px",
-  rows: []
-});
+const cloudId = ref()
 const data = ref();
+const schema = ref<SchemaType>({ labelWidth: "150px", rows: [] });
 // Compputed
 // Watcher
 // Methods
-const getPosition = (event) => {
-  const relatedPos = getMousePosition(event) as XYPosition;
-  const pos = instance.value.project({ x: relatedPos.x, y: relatedPos.y - 40 });
-  return pos;
-};
 const checkAllowedNodes = (nodeType: string): boolean => {
   // 이미 Cloud 노드가 존재하는지 여부
   if (nodeType.endsWith('cloud') && store.nodes.some(n => n.type === 'cloud')) {
     return false;
   }
-
   return true
 }
-
+const onArrange = () => {
+  Helper.adjustSiblings(cloudId.value)
+}
 const onClick = () => {
-  const { rows, data: nodeData } = getSelectedNodeSchema()
+  const { rows, data: nodeData } = Helper.getSelectedNodeSchema()
   schema.value.rows = rows
   data.value = nodeData
 };
@@ -117,20 +106,22 @@ const onDrop = (event: DragEvent) => {
   if (instance.value) {
     const nodeType = event.dataTransfer?.getData("application/vueflow") as ClusterComponentTypes
     if (checkAllowedNodes(nodeType)) {
-      const node = getNewNode(nodeType)
-      node.position = getPosition(event);
+      const node = Helper.getNewNode(nodeType)
+      node.position = Helper.getDropPosition(event, instance.value);
+      node.data.designMode = true
 
       store.addNodes([node]);
 
       // 추가된 Node에 해당하는 후 작업 처리
-      if (node.type === 'cloud') {
-        nextTick(() => {
+      nextTick(() => {
+        if (node.type === 'cloud') {
+          cloudId.value = node.id
           // Cluster에 연계할 Registry 추가
-          addExternalNodesForCluster(ClusterComponentTypes.Registry, node.position)
+          Helper.addExternalNodesForCluster(node.id, ClusterComponentTypes.Registry, node.position)
           // Cluster에 연계할 External L/B 추가
-          addExternalNodesForCluster(ClusterComponentTypes.LoadBalancer, node.position)
-        })
-      }
+          Helper.addExternalNodesForCluster(node.id, ClusterComponentTypes.LoadBalancer, node.position)
+        }
+      })
     } else {
       // TODO: Message
       alert('Not Allowed')
@@ -141,14 +132,11 @@ const onPropsChanged = (propsData) => {
   const node = store.getNode(propsData.id)
   node.label = propsData.name;
 }
-
 const onEdgeUpdateStart = (edge: Edge) => { }
 const onEdgeUpdateEnd = (edge: Edge) => { }
 const onEdgeUpdate = ({ edge, connection }: FlowEvents['edgeUpdate']) => { updateEdge(edge, connection, [...store.nodes, ...store.edges]) }
-
 // Events
 onConnect((params) => store.addEdges([params]));
-
 onMounted(() => { });
 // Logics (like api call, etc)
 </script>

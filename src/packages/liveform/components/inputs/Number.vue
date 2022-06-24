@@ -21,6 +21,8 @@ defineProps({
 		required: true,
 	}
 });
+
+//TODO: Validation 및 oldValue 재 처리 검토
 </script>
 <style lang="scss" scoped>
 .p-inputnumber {

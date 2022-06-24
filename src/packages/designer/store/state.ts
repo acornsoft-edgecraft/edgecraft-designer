@@ -21,6 +21,7 @@ import {
   CloudNode,
   CAPINode,
   MemberNode,
+  MachineGroupNode,
   MachineSetNode,
 } from '../components'
 
@@ -33,6 +34,7 @@ export const defaultNodeTypes: DefaultNodeTypes = {
   cloud: CloudNode,
   capi: CAPINode,
   member: MemberNode,
+  machinegroup: MachineGroupNode,
   machineset: MachineSetNode,
 }
 

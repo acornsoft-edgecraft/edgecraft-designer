@@ -13,11 +13,12 @@
  * this 등의 사용이 불가능합니다.
  */
 // imports
-import { useZoomPanHelper, FlowExportObject, useVueFlow, adjustSiblings } from "~/packages/designer";
+import { useStorage } from "@vueuse/core";
+import { useZoomPanHelper, FlowExportObject, useVueFlow, Helper } from "~/packages/designer";
 // Props
 // const props = defineProps({})
 // Emits
-// const emits = defineEmits(['eventname'])
+const emits = defineEmits(['arrange'])
 // Properties
 const { setTransform } = useZoomPanHelper();
 const { getNodes, setNodes, setEdges, nodesSelectionActive, instance, addSelectedNodes } = useVueFlow();
@@ -32,7 +33,7 @@ const state = useStorage<FlowExportObject>(flowKey, {
 // Watcher
 // Methods
 const onArrange = () => {
-  adjustSiblings()
+  emits('arrange')
 }
 
 const onSelectAll = () => {

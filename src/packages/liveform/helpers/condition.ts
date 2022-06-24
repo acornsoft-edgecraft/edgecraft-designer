@@ -25,6 +25,9 @@ const parseCondition = (cond: Array<any>, model: any): boolean => {
         case "<=":
             bool = model[targetKey] <= value;
             break;
+        case "exists":
+            bool = model.hasOwnProperty(targetKey) === value
+            break;
     }
     return bool;
 }

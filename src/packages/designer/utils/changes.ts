@@ -1,3 +1,4 @@
+import { useEventBus } from '@vueuse/core'
 import { clampPosition, isGraphEdge, isGraphNode } from './graph'
 import {
   EdgeChange,
@@ -15,6 +16,7 @@ import {
   Node,
   FlowElement,
   Edge,
+  ClusterComponentTypes,
 } from '../types'
 
 type CreatePositionChangeParams = {
@@ -23,6 +25,8 @@ type CreatePositionChangeParams = {
   diff?: XYPosition
   dragging?: boolean
 }
+
+const { emit } = useEventBus<any>("designer")
 
 export const handleParentResizing = (updateItem: GraphNode, curr: GraphNode[]) => {
   if (updateItem) {
@@ -86,14 +90,14 @@ export const handleParentResizing = (updateItem: GraphNode, curr: GraphNode[]) =
       }
 
       // 자식 노드들에 따른 최대 Width/Height 보정
-      const childs = curr.filter(item => item.parentNode === parent.id);
       const limitSize = { width: 0, height: 0 }
-      childs.forEach(c => {
-        if (limitSize.width < (c.position.x + c.dimensions.width)) limitSize.width = (c.position.x + c.dimensions.width)
-        if (limitSize.height < (c.position.y + c.dimensions.height)) limitSize.height = (c.position.y + c.dimensions.height)
+      curr.filter(i => i.parentNode === parent.id).forEach(i => {
+        if (limitSize.width < (i.position.x + i.dimensions.width)) limitSize.width = (i.position.x + i.dimensions.width)
+        if (limitSize.height < (i.position.y + i.dimensions.height)) limitSize.height = (i.position.y + i.dimensions.height)
       })
-      limitSize.width += restSize;
-      limitSize.height += restSize;
+
+      limitSize.width += restSize
+      limitSize.height += restSize
 
       if (typeof parent.style.width === 'string') {
         const parentWidth = parseInt(parent.style.width, 10)
@@ -128,7 +132,7 @@ export const handleParentResizing = (updateItem: GraphNode, curr: GraphNode[]) =
 }
 
 export const applyChanges = <
-  T extends Node | GraphNode | Edge | GraphEdge | FlowElement = Node,
+  T extends Node | Edge | FlowElement = Node,
   C extends ElementChange = T extends GraphNode ? NodeChange : EdgeChange,
   >(
     changes: C[],
