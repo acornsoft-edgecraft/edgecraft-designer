@@ -43,10 +43,14 @@ export { VueFlow as VueFlowInjection, NodeId as NodeIdInjection } from './contex
 export { default as useZoomPanHelper } from './composables/useZoomPanHelper'
 export { default as useVueFlow } from './composables/useVueFlow'
 export { default as useHandle } from './composables/useHandle'
+export { default as useCloudHandler } from './composables/useCloudHandler'
+export { default as useCAPIHandler } from './composables/useCAPIHandler'
+export { default as useMachineGroupHandler } from './composables/useMachineGroupHandler'
+export { default as useMachineSetHandler } from './composables/useMachineSetHandler'
+export * as Helper from './utils/designer'
 
 export * from './additional-components'
 export * from './types'
 export * from './components/UserSelection/utils';
 
-// useCloudHelper
-export * from './composables/useDesignerHelper'
+

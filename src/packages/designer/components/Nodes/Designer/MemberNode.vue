@@ -53,12 +53,9 @@
 </template>
 
 <script setup lang="ts">
-import { useVueFlow } from "../../../composables";
 import Handle from "../../Handle/Handle.vue";
-import { Position, ClusterComponentTypes, WorkerRoles } from "../../../types";
+import { Position, ClusterComponentTypes, WorkerRoles, Helper } from "../../../index";
 import type { NodeProps } from "../../../types/node";
-
-const { store } = useVueFlow()
 
 const props = withDefaults(defineProps<NodeProps>(), {
      connectable: true
@@ -70,8 +67,7 @@ const isCompute = computed(() => props.type === ClusterComponentTypes.Worker && 
 
 onMounted(() => {
      nextTick(() => {
-          const currNode = store.nodes.find(n => n.id === props.id)
-          if (currNode) currNode.nodeElement = props.nodeElement;
+          Helper.setNodeElement(props.id, props.nodeElement)
      })
 })
 </script>

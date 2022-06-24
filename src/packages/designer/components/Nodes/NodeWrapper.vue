@@ -120,7 +120,11 @@ const type = computed(() => {
     // name.value = 'default'
     // return store.getNodeTypes.default
     // MOD: MemberNode as default
-    // MOD: Master/Worker Set인 경우는 MachineSet 컴포넌트로 고정
+    // MOD: Master/Worker Group/Set인 경우는 MachineSet 컴포넌트로 고정
+    if (name.value === 'mastergroup' || name.value === 'workergroup') {
+      name.value = 'machinegroup'
+      return store.getNodeTypes.machinegroup
+    }
     if (name.value === 'masterset' || name.value === 'workerset') {
       name.value = 'machineset'
       return store.getNodeTypes.machineset

@@ -1,4 +1,4 @@
-getNewNodeInfo<template>
+<template>
   <div class="page-container">
     <suspense timeout="0">
       <template #default>
@@ -21,7 +21,7 @@ getNewNodeInfo<template>
                        :edge-updatable="true"
                        :snap-to-grid="true"
                        :snap-grid="[5, 5]">
-                <K3DesignerManageControls />
+                <K3DesignerManageControls @arrange="onArrange" />
                 <Background :gap="5" />
                 <MiniMap />
                 <Controls />
@@ -50,18 +50,16 @@ getNewNodeInfo<template>
 
 <script setup lang="ts">
 import {
-  VueFlow, MiniMap, Controls, Background, Node, Edge, FlowEvents, FlowInstance, SmoothStepEdge, XYPosition, updateEdge, useVueFlow,
-  CloudType, ClusterComponentTypes, getNewNode, getMousePosition, addExternalNodesForCluster, getSelectedNodeSchema
+  VueFlow, MiniMap, Controls, Background, Edge, FlowEvents, FlowInstance, SmoothStepEdge, XYPosition, updateEdge, ClusterComponentTypes, Helper, getMousePosition
 } from "~/packages/designer";
-
 import { SchemaType } from "~/packages/liveform";
 
-const { instance, onConnect, store, } = useVueFlow({
+// Designer 초기화
+const { instance, onConnect, store } = Helper.initialize({
   fitViewOnInit: true,
   edgeTypes: { default: SmoothStepEdge },
   edgesUpdatable: true
-});
-
+})
 /**
  * 여기서는 해당 화면 생성 이전에 처리할 설정을 구성합니다.
  * this 등의 사용이 불가능합니다.
@@ -72,21 +70,12 @@ definePageMeta({ layout: "default", title: "CLUSTER Designer PoC", public: false
 // Props
 // Emits
 // Properties
-let id = 0;
-const getId = () => `dndnode_${id++}`;
-const schema = ref<SchemaType>({
-  labelWidth: "150px",
-  rows: []
-});
+const clusterId = ref("")
 const data = ref();
+const schema = ref<SchemaType>({ labelWidth: "150px", rows: [] });
 // Compputed
 // Watcher
 // Methods
-const getPosition = (event) => {
-  const relatedPos = getMousePosition(event) as XYPosition;
-  const pos = instance.value.project({ x: relatedPos.x, y: relatedPos.y - 40 });
-  return pos;
-};
 const checkAllowedNodes = (nodeType: string): boolean => {
   // 이미 Cluster 노드가 존재하는지 여부
   if (nodeType.endsWith('capi') && store.nodes.some(n => n.type === 'capi')) {
@@ -95,9 +84,11 @@ const checkAllowedNodes = (nodeType: string): boolean => {
 
   return true
 }
-
+const onArrange = () => {
+  Helper.adjustSiblings(clusterId.value)
+}
 const onClick = () => {
-  const { rows, data: nodeData } = getSelectedNodeSchema()
+  const { rows, data: nodeData } = Helper.getSelectedNodeSchema()
   schema.value.rows = rows
   data.value = nodeData
 };
@@ -115,17 +106,21 @@ const onDrop = (event: DragEvent) => {
   if (instance.value) {
     const nodeType = event.dataTransfer?.getData("application/vueflow") as ClusterComponentTypes
     if (checkAllowedNodes(nodeType)) {
-      const node = getNewNode(nodeType)
-      node.position = getPosition(event);
+      const node = Helper.getNewNode(nodeType)
+      node.position = Helper.getDropPosition(event, instance.value);
+      node.data.designMode = true
 
       store.addNodes([node]);
 
       // 추가된 Node에 해당하는 후 작업 처리
       nextTick(() => {
-        // Cluster에 연계할 Registry 추가
-        addExternalNodesForCluster(ClusterComponentTypes.Registry, node.position)
-        // Cluster에 연계할 External L/B 추가
-        addExternalNodesForCluster(ClusterComponentTypes.LoadBalancer, node.position)
+        if (node.type === 'capi') {
+          clusterId.value = node.id
+          // Cluster에 연계할 Registry 추가
+          Helper.addExternalNodesForCluster(node.id, ClusterComponentTypes.Registry, node.position)
+          // Cluster에 연계할 External L/B 추가
+          Helper.addExternalNodesForCluster(node.id, ClusterComponentTypes.LoadBalancer, node.position)
+        }
       })
     } else {
       // TODO: Message
@@ -137,15 +132,13 @@ const onPropsChanged = (propsData) => {
   const node = store.getNode(propsData.id)
   node.label = propsData.name;
 }
-
 const onEdgeUpdateStart = (edge: Edge) => { }
 const onEdgeUpdateEnd = (edge: Edge) => { }
 const onEdgeUpdate = ({ edge, connection }: FlowEvents['edgeUpdate']) => { updateEdge(edge, connection, [...store.nodes, ...store.edges]) }
-
 // Events
 onConnect((params) => store.addEdges([params]));
-
-onMounted(() => { });
+onMounted(() => {
+});
 // Logics (like api call, etc)
 </script>
 
