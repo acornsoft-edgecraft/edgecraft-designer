@@ -10,6 +10,7 @@ export default defineNuxtConfig({
     srcDir: 'src/',
     // Stylesheets
     css: [
+        "@fortawesome/fontawesome-free/css/all.css",
         'primevue/resources/themes/bootstrap4-light-blue/theme.css',
         'primevue/resources/primevue.css',
         'primeicons/primeicons.css',
@@ -38,6 +39,14 @@ export default defineNuxtConfig({
         extractCSS: true,
         splitChunks: {
             layouts: true
+        }
+    },
+    // Hooks
+    hooks: {
+        'vite:extendConfig': (config, { isClient, isServer }) => {
+            if (isClient) {
+                config.resolve.alias.vue = 'vue/dist/vue.esm-bundler'
+            }
         }
     },
     // Typescript 
