@@ -1,84 +1,50 @@
 <template>
-  <div :class="containerClass" @click="onWrapperClick" @toggle-menu="onToggleMenu">
-    <Sidebar @click="onSidebarClick" @menuitem-click="onMenuItemClick" />
-    <div class="main-wrapper flex flex-column flex-1">
-      <Header />
+  <div class="layout-container flex flex-column">
+    <HeaderBar />
+    <div class="layout-main flex flex-row flex-1">
+      <K3SidebarMenu v-model:collapsed="collapsed"
+                     :menu="menus"
+                     :show-one-child="true"
+                     @update:collapsed="onToggleCollapsed"
+                     @item-click="onItemClicked" />
       <div class="layout-main">
         <slot />
       </div>
-      <Footer />
-      <Config :layoutMode="layoutMode" @layout-change="onLayoutChange" />
-      <transition name="layout-mask">
-        <div v-if="mobileMenuActive" class="layout-mask p-component-overlay"></div>
-      </transition>
     </div>
+    <FooterBar />
   </div>
 </template>
 
 <script setup lang="ts">
-/**
- * 여기서는 해당 화면 생성 이전에 처리할 설정을 구성합니다.
- * this 등의 사용이 불가능합니다.
- */
-// imports
-import Footer from "./components/footer.vue";
-import Header from "./components/header.vue";
-import Sidebar from "./components/sidebar.vue";
-import Config from "./components/config.vue";
-// Page meta
-definePageMeta({ name: "new" });
-// Props
-// const props = defineProps({}),
-// Emits
-// const emits = defineEmits(['eventname']),
-// Properties
-let layoutMode = "static";
-let staticMenuInactive = false;
-let overlayMenuActive = false;
-let mobileMenuActive = false;
-let menuClick = false;
-// Compputed
-const containerClass = computed(() => [
-  "layout-wrapper",
-  "flex",
-  "flex-row",
-  {
-    "layout-overlay": layoutMode === "overlay",
-    "layout-static": layoutMode === "static",
-    "layout-static-sidebar-inactive": staticMenuInactive && layoutMode === "static",
-    "layout-overlay-sidebar-active": overlayMenuActive && layoutMode === "overlay",
-    "layout-mobile-sidebar-active": mobileMenuActive,
-    // "p-input-filled": $primevue.config.inputStyle === "filled",
-    // "p-ripple-disabled": $primevue.config.ripple === false,
-    // "layout-theme-light": $appState.theme.startsWith("saga"),
-  },
-]);
-// Watcher
-// Methods
-const onToggleMenu = () => {
-  menuClick = true;
-};
-const onWrapperClick = () => {
-  if (!menuClick) {
-    overlayMenuActive = false;
-    mobileMenuActive = false;
+import FooterBar from "./components/footerbar.vue";
+import HeaderBar from "./components/headerbar.vue";
+
+const collapsed = false
+
+const separator = {
+  template: '<hr style="border: 0.175rem inset rgba(255, 255, 255, 0.7); margin: 10px 20px 10px 20px;">'
+}
+
+const menus = computed(() => useAppHelper().State.user.get().value.menus.map(m => {
+  if (m.separator) {
+    delete m.separator
+    m.component = markRaw(separator)
   }
-  menuClick = false;
-};
-const onLayoutChange = (mode) => {
-  layoutMode = mode;
-};
-const onSidebarClick = () => {
-  menuClick = true;
-};
-const onMenuItemClick = (event) => {
-  if (event.item && !event.item.items) {
-    overlayMenuActive = false;
-    mobileMenuActive = false;
-  }
-};
+
+  return m
+}))
+
+const onToggleCollapsed = (collapsed) => {
+  // TODO: Sidebar Menu Collapsed 상태에 따른 처리 (필요한 경우)
+}
+
+const onItemClicked = (event, item) => {
+  // TODO: Menu Item 클릭에 따른 처리 (필요한 경우)
+}
+
 // Events
 // Logics (like api call, etc)
 </script>
 
-<style scoped lang="scss"></style>
+<style scoped lang="scss">
+</style>

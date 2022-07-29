@@ -4,13 +4,14 @@ export interface SchemaType {
 }
 
 export interface RowType {
-    type: 'text' | 'password' | 'checkbox' | 'boolean' | 'textarea' | 'textbox' | 'select' | 'radio' | 'nested' | 'date' | 'number';
+    type: 'text' | 'password' | 'checkbox' | 'boolean' | 'textarea' | 'textbox' | 'select' | 'radio' | 'nested' | 'date' | 'number' | 'mask' | 'cidr' | 'ipaddr';
     readonly?: boolean | Array<any>;
     field: string
     options?: string | Array<any>
     optionLabel?: string
     optionValue?: string
     label?: string
+    mask?: string
     columns?: Array<RowType>
     criteria?: Array<any>
 }

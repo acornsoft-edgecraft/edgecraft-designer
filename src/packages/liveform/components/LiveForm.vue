@@ -11,12 +11,13 @@
     <K3Panel header="Properties">
       <div class="props-row"
            v-for="(row, index) in props.schema?.rows"
-           :key="`${row}-${String(index)}`"
+           :key="`${getKey(index)}`"
            :class="{ 'props-row-flex-column': row.type === 'nested' }">
         <template v-if="evaluateConditionalDisplay(row, modelValue)">
           <div class="props-row-label">{{ row.label ?? row.field }}</div>
           <div class="props-row-input">
             <component v-if="modelValue"
+                       :key="`${getKey(index)}`"
                        :is="getComponent(row.type)"
                        v-model="modelValue"
                        :config="row"
@@ -52,7 +53,16 @@ const props = defineProps({
     required: true,
     default: {},
   },
+  keyField: {
+    type: String,
+    required: true,
+    default: ''
+  }
 });
+
+const getKey = (index: number) => {
+  return `${index}-${props.modelValue[props.keyField].toLowerCase().replace(/\s/g, '_')}`
+}
 
 const onApply = () => {
   emit('change', props.modelValue)
@@ -108,24 +118,6 @@ export default {
         align-items: center;
         border-bottom: 1px solid lightgray;
 
-        // input[type='text'],
-        // input[type='password'],
-        // input[type='date'],
-        // input[type='number'],
-        // textarea,
-        // select {
-        //   flex: 1;
-        //   border: none;
-        //   background-color: rgba(255, 255, 255, 0.6);
-        //   border-radius: 8px;
-        //   font-family: inherit;
-        //   font-size: 0.9rem;
-        // }
-
-        // textarea {
-        //   resize: vertical
-        // }
-
         .props-row-label {
           display: flex;
           align-items: center;
@@ -152,105 +144,6 @@ export default {
         }
       }
     }
-
-
-
-
-
-
-
-    //     &.sf-row-flex-column {
-    //       flex-direction: column;
-    //       display: flex;
-    //       align-items: center;
-    //       justify-content: center;
-
-    //       .sf-row-label {
-    //         width: 100%;
-    //         justify-content: center;
-    //       }
-    //       .sf-row-input {
-    //         width: 100%;
-    //         flex: 1;
-    //         display: flex;
-    //         position: relative;
-    //       }
-    //     }
-
-    //     .sf-row-input {
-    //       flex: 1;
-    //       display: flex;
-    //       position: relative;
-    //     }
   }
 }
-
-// .sf-container {
-//   display: flex;
-//   flex-direction: column;
-//   overflow: hidden;
-//   padding: 10px;
-//   color: inherit;
-
-//   .sf-row {
-//     display: flex;
-//     padding: 10px;
-//     position: relative;
-
-//     input[type="text"],
-//     input[type="password"],
-//     input[type="date"],
-//     input[type="number"],
-//     textarea,
-//     select {
-//       flex: 1;
-//       border: none;
-//       background-color: rgba(255, 255, 255, 0.6);
-//       padding: 8px;
-//       border-radius: 8px;
-//       font-family: inherit;
-//       font-size: 0.9em;
-//     }
-
-//     textarea {
-//       resize: vertical;
-//     }
-
-//     .sf-row-label {
-//       width: v-bind('props?.schema?.labelWidth ?? "150px"');
-//       overflow: hidden;
-//       white-space: nowrap;
-//       text-overflow: ellipsis;
-//       display: flex;
-//       justify-content: flex-end;
-//       align-items: center;
-//       margin: 0 8px 0 0;
-//       height: 32px;
-//     }
-
-//     &.sf-row-flex-column {
-//       flex-direction: column;
-//       display: flex;
-//       align-items: center;
-//       justify-content: center;
-
-//       .sf-row-label {
-//         width: 100%;
-//         justify-content: center;
-//       }
-//       .sf-row-input {
-//         width: 100%;
-//         flex: 1;
-//         display: flex;
-//         position: relative;
-//       }
-//     }
-
-//     .sf-row-input {
-//       flex: 1;
-//       display: flex;
-//       position: relative;
-//     }
-//   }
-// }
 </style>

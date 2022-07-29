@@ -138,6 +138,7 @@ const type = computed(() => {
       }
     }
   }
+
   if (typeof edgeType !== 'string') return edgeType
 
   const slot = slots?.[`edge-${name.value}`]

@@ -56,6 +56,11 @@ onMounted(() => {
   store.updateNodeDimensions([{ id: node.value.id, nodeElement: nodeElement.value, forceUpdate: true }])
 })
 
+// MOD: Data의 name이 변경되면 Label에 적용
+watch(() => node.value.data.name, (newVal) => {
+  node.value.label = newVal
+})
+
 watch(
   [
     () => node.value.position,
@@ -87,7 +92,9 @@ store.updateNodePosition({ id: node.value.id, diff: { x: 0, y: 0 } })
 
 const slots = inject(Slots)
 
-const name = ref(node.value.type ?? 'default')
+//const name = ref(node.value.type ?? 'default')
+// MOD: MemberNode to default
+const name = ref(node.value.type ?? 'member')
 watch(
   () => node.value.type,
   (v) => v && (name.value = v),
@@ -109,9 +116,22 @@ const type = computed(() => {
 
   const slot = slots?.[`node-${name.value}`]
   if (!slot?.({})) {
-    console.warn(`[vueflow]: Node type "${node.value.type}" not found and no node-slot detected. Using fallback type "default".`)
-    name.value = 'default'
-    return store.getNodeTypes.default
+    // console.warn(`[vueflow]: Node type "${node.value.type}" not found and no node-slot detected. Using fallback type "default".`)
+    // name.value = 'default'
+    // return store.getNodeTypes.default
+    // MOD: MemberNode as default
+    // MOD: Master/Worker Group/Set인 경우는 MachineSet 컴포넌트로 고정
+    if (name.value === 'mastergroup' || name.value === 'workergroup') {
+      name.value = 'machinegroup'
+      return store.getNodeTypes.machinegroup
+    }
+    if (name.value === 'masterset' || name.value === 'workerset') {
+      name.value = 'machineset'
+      return store.getNodeTypes.machineset
+    } else {
+      name.value = 'member'
+      return store.getNodeTypes.member
+    }
   }
 
   return slot

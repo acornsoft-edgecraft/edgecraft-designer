@@ -58,7 +58,14 @@ export const isEdge = (element: MaybeElement): element is Edge => 'id' in elemen
 export const isGraphEdge = (element: MaybeElement): element is GraphEdge =>
   isEdge(element) && 'sourceNode' in element && 'targetNode' in element
 
-export const isNode = (element: MaybeElement): element is Node => 'id' in element && !isEdge(element)
+//export const isNode = (element: MaybeElement): element is Node => 'id' in element && !isEdge(element)
+//export const isGraphNode = (element: MaybeElement): element is GraphNode => isNode(element) && 'computedPosition' in element
+export const isNode = (element: MaybeElement): Boolean => {
+  if (element) {
+    return 'id' in element && !isEdge(element)
+  }
+  return false;
+}
 export const isGraphNode = (element: MaybeElement): element is GraphNode => isNode(element) && 'computedPosition' in element
 
 export const parseNode = (node: Node, nodeExtent: CoordinateExtent, defaults?: Partial<GraphNode>): GraphNode => {

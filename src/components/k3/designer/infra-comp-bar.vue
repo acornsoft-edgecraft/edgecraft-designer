@@ -7,7 +7,8 @@
            :draggable="true"
            @dragstart="(event: DragEvent) => onDragStart(event, ClusterComponentTypes.BaremetalCloud)">
         <div class="comp-image">
-          <img src="/images/designer/bmcloud.png"
+          <img class="icon"
+               src="/images/designer/bmcloud.png"
                draggable=false />
         </div>
         <div class="comp-detail">
@@ -18,7 +19,8 @@
            :draggable="true"
            @dragstart="(event: DragEvent) => onDragStart(event, ClusterComponentTypes.OpenstackCloud)">
         <div class="comp-image">
-          <img src="/images/designer/oscloud.png"
+          <img class="icon"
+               src="/images/designer/oscloud.png"
                draggable=false />
         </div>
         <div class="comp-detail">

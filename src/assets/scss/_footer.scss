@@ -10,37 +10,3 @@
     }
   }
 }
-// .layout-footer {
-//   transition: margin-left $transitionDuration;
-//   display: flex;
-//   align-items: right;
-//   justify-content: right;
-//   border-top: 1px solid var(--surface-border);
-//   height: 2.9rem !important;
-//   position: relative;
-//   transform: translateY();
-
-//   .layout-footer-logo {
-//     display: flex;
-//     align-items: center;
-//     color: var(--surface-900);
-//     font-size: 1.5rem;
-//     font-weight: 500;
-//     border-radius: 12px;
-//     padding-right: 2rem;
-
-//     img {
-//       height: 2.5rem;
-//       margin-right: 0.5rem;
-//     }
-
-//     img.acorn_logo {
-//       height: 2rem;
-//       width: 10rem;
-//     }
-
-//     &:focus {
-//       @include focused();
-//     }
-//   }
-// }

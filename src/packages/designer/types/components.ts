@@ -21,7 +21,7 @@ export type EdgeComponent<Data = ElementData> =
 
 // MOD: 기본 노드/엣지 형식 추가
 export type DefaultEdgeTypes = { [key in 'default' | 'straight' | 'smoothstep' | 'step' | 'simplebezier']: EdgeComponent }
-export type DefaultNodeTypes = { [key in 'input' | 'output' | 'default' | 'cloud' | 'master' | 'worker' | 'registry' | 'loadbalancer' | 'storageserver' | 'storagecluster' | 'etcdcluster']: NodeComponent }
+export type DefaultNodeTypes = { [key in 'input' | 'output' | 'default' | 'cloud' | 'capi' | 'member' | 'machinegroup' | 'machineset']: NodeComponent }
 
 export interface BackgroundProps {
   /** The background pattern variant, {@link BackgroundVariant} */

@@ -18,9 +18,10 @@
                        @edge-update-start="onEdgeUpdateStart"
                        @edge-update-end="onEdgeUpdateEnd"
                        @edge-update="onEdgeUpdate"
-                       :snapToGrid="true"
-                       :snapGrid="[5, 5]">
-                <K3DesignerSaveControls />
+                       :edge-updatable="true"
+                       :snap-to-grid="true"
+                       :snap-grid="[5, 5]">
+                <K3DesignerManageControls @arrange="onArrange" />
                 <Background :gap="5" />
                 <MiniMap />
                 <Controls />
@@ -28,7 +29,8 @@
             </div>
             <div class="property-pane flex-none">
               <K3DesignerProperty :schema="schema"
-                                  :data="data"
+                                  v-model="data"
+                                  keyField="name"
                                   @change="onPropsChanged" />
             </div>
           </section>
@@ -47,15 +49,18 @@
 </template>
 
 <script setup lang="ts">
-import { VueFlow, MiniMap, Controls, Background, Node, Edge, FlowEvents, FlowInstance, useVueFlow, XYPosition, SmoothStepEdge, CloudType, ClusterComponentTypes, getDefaultCloudData, updateEdge } from "~/packages/designer";
-import { getMousePosition } from "~/packages/designer/components/UserSelection/utils";
-import { CloudDataRows, MasterDataRows, WorkerDataRows, RegistryDataRows, LoadbalancerDataRows } from "~/models/designer";
-import { SchemaType, RowType } from "~/packages/liveform";
-const { instance, onConnect, store, } = useVueFlow({
+import {
+  VueFlow, MiniMap, Controls, Background, Edge, FlowEvents, FlowInstance, SmoothStepEdge, XYPosition, updateEdge, ClusterComponentTypes, Helper, getMousePosition
+} from "~/packages/designer";
+import { SchemaType } from "~/packages/liveform";
+
+// Designer 초기화
+const { instance, onConnect, store } = Helper.initialize({
   fitViewOnInit: true,
   edgeTypes: { default: SmoothStepEdge },
   edgesUpdatable: true
-});
+})
+
 /**
  * 여기서는 해당 화면 생성 이전에 처리할 설정을 구성합니다.
  * this 등의 사용이 불가능합니다.
@@ -64,164 +69,28 @@ const { instance, onConnect, store, } = useVueFlow({
 // Page meta
 definePageMeta({ layout: "default", title: "CLOUD Designer PoC", public: false });
 // Props
-// const props = defineProps({}),
 // Emits
-// const emits = defineEmits(['eventname']),
 // Properties
-let id = 0;
-const getId = () => `dndnode_${id++}`;
-const schema = ref<SchemaType>({
-  labelWidth: "150px",
-  rows: []
-});
+const cloudId = ref()
 const data = ref();
+const schema = ref<SchemaType>({ labelWidth: "150px", rows: [] });
 // Compputed
 // Watcher
 // Methods
-const getPosition = (event) => {
-  const relatedPos = getMousePosition(event) as XYPosition;
-  const pos = instance.value.project({ x: relatedPos.x, y: relatedPos.y - 40 });
-  return pos;
-};
-
 const checkAllowedNodes = (nodeType: string): boolean => {
   // 이미 Cloud 노드가 존재하는지 여부
   if (nodeType.endsWith('cloud') && store.nodes.some(n => n.type === 'cloud')) {
     return false;
   }
-
   return true
 }
-
-const getNodeInfo = (nodeType: string) => {
-  let type = nodeType
-  let label = `${type}`
-  const style = {} as any;
-  let data = {} as any;
-
-  switch (nodeType) {
-    case ClusterComponentTypes.BaremetalCloud:
-    case ClusterComponentTypes.OpenstackCloud:
-      type = 'cloud';
-      label = `${nodeType === ClusterComponentTypes.BaremetalCloud ? 'Baremetal' : 'Openstack'} Cloud`;
-      data = getDefaultCloudData()
-      data.name = label;
-      data.cloudType = nodeType === ClusterComponentTypes.BaremetalCloud ? CloudType.Baremetal : CloudType.Openstack;
-      data.masterCount = 1;
-      data.workerCount = 3;
-      data.useExternalETCD = false
-      style.width = '200px';
-      style.height = '200px';
-      break;
-    case 'loadbalancer':
-      type = ClusterComponentTypes.LoadBalancer;
-      label = `External`;
-      data.name = label;
-      break;
-    default:
-      break;
-  }
-
-  return { type, label, data, style }
+const onArrange = () => {
+  Helper.adjustSiblings(cloudId.value)
 }
-
-const addExternalNodesForCluster = (type: ClusterComponentTypes, clusterId: string, pos: XYPosition) => {
-  // find cluster node
-  const clusterNode = store.nodes.filter(n => n.id === clusterId)[0]!
-
-  function getPosition(type: ClusterComponentTypes, pos: XYPosition) {
-    let xPos = 0, yPos = 0
-    if (clusterNode) {
-      const xGap = 50, yGap = 50
-      switch (type) {
-        case ClusterComponentTypes.Registry:
-          xPos += pos.x + clusterNode.dimensions.width + xGap
-          yPos += pos.y + (clusterNode.dimensions.height / 2) - yGap
-          break;
-        case ClusterComponentTypes.LoadBalancer:
-          xPos += pos.x + (clusterNode.dimensions.width / 2) - xGap
-          yPos += pos.y + clusterNode.dimensions.height + yGap
-          break;
-      }
-
-    }
-    return { x: xPos, y: yPos }
-  }
-
-  // add node
-  const newNode = {} as Node;
-  newNode.id = getId()
-  newNode.type = type
-  newNode.position = getPosition(type, pos)
-  newNode.label = type.charAt(0).toUpperCase() + type.slice(1)
-
-  switch (type) {
-    case ClusterComponentTypes.Registry:
-      newNode.data = {}
-      break;
-    case ClusterComponentTypes.LoadBalancer:
-      newNode.data = {}
-      break;
-  }
-
-  store.addNodes([newNode])
-
-  // add edges
-  nextTick(() => {
-    const node = store.nodes.filter(n => n.id === newNode.id)[0]!
-    if (node) {
-      const newEdges = []
-      const id = `${node.id}-${clusterNode.id}`
-      switch (type) {
-        case ClusterComponentTypes.Registry:
-          if (!store.edges.some(e => (e.sourceNode === node && e.targetNode === clusterNode) || (e.sourceNode === clusterNode && e.targetNode === node))) {
-            newEdges.push({ id, source: node.id, target: clusterNode.id, sourceHandle: 'left', targetHandle: 'right' })
-          }
-          break;
-        case ClusterComponentTypes.LoadBalancer:
-          if (!store.edges.some(e => (e.sourceNode === node && e.targetNode === clusterNode) || (e.sourceNode === clusterNode && e.targetNode === node))) {
-            newEdges.push({ id, source: node.id, target: clusterNode.id, sourceHandle: 'top', targetHandle: 'bottom' })
-          }
-          // const workers = store.nodes.filter(n => n.parentNode === clusterNode.id && n.type === ClusterComponentTypes.Worker)
-          // workers.forEach(w => {
-          //   const id = `${node.id}-${w.id}`
-          //   if (!store.edges.some(e => (e.sourceNode === w && e.targetNode === node) || (e.sourceNode === node && e.targetNode === w))) {
-          //     newEdges.push({ id, source: node.id, target: w.id, sourceHandle: 'top', targetHandle: 'bottom' })
-          //   }
-          // })
-          break;
-      }
-
-      store.addEdges(newEdges)
-    }
-  })
-}
-
 const onClick = () => {
-  if (store.getSelectedNodes.length > 0) {
-    const node = store.getSelectedNodes[0];
-    switch (node.type) {
-      case ClusterComponentTypes.Master:
-        schema.value.rows = MasterDataRows as ReadonlyArray<RowType>;
-        break;
-      case ClusterComponentTypes.Worker:
-        schema.value.rows = WorkerDataRows as ReadonlyArray<RowType>;
-        break;
-      case ClusterComponentTypes.Registry:
-        schema.value.rows = RegistryDataRows as ReadonlyArray<RowType>;
-        break;
-      case ClusterComponentTypes.LoadBalancer:
-        schema.value.rows = LoadbalancerDataRows as ReadonlyArray<RowType>;
-        break;
-      case 'cloud':
-        schema.value.rows = CloudDataRows as ReadonlyArray<RowType>;
-        break;
-    }
-    data.value = node.data;
-  } else {
-    schema.value.rows = [];
-    data.value = undefined;
-  }
+  const { rows, data: nodeData } = Helper.getSelectedNodeSchema()
+  schema.value.rows = rows
+  data.value = nodeData
 };
 const onLoad = (flowInstance: FlowInstance) => {
   flowInstance.fitView();
@@ -235,33 +104,22 @@ const onDragOver = (event: DragEvent) => {
 // Add new node on drag-stop event.
 const onDrop = (event: DragEvent) => {
   if (instance.value) {
-    const { type, label, data, style } = getNodeInfo(event.dataTransfer?.getData("application/vueflow"));
-    if (checkAllowedNodes(type)) {
-      const position = getPosition(event);
-      const _id = getId();
-      const newNode = {
-        id: _id,
-        type: type,
-        position,
-        label: label,
-        data: data,
-        style: style
-      } as Node;
-      store.addNodes([newNode]);
+    const nodeType = event.dataTransfer?.getData("application/vueflow") as ClusterComponentTypes
+    if (checkAllowedNodes(nodeType)) {
+      const node = Helper.getNewNode(nodeType)
+      node.position = Helper.getDropPosition(event, instance.value);
+      node.data.designMode = true
+
+      store.addNodes([node]);
 
       // 추가된 Node에 해당하는 후 작업 처리
       nextTick(() => {
-        switch (type) {
-          case 'cloud':
-            // Cluster에 연계할 Registry 추가 여부
-            if (data.useRegistry) {
-              addExternalNodesForCluster(ClusterComponentTypes.Registry, _id, position)
-            }
-            // Cluster에 연계할 External L/B 추가 여부
-            if (data.useExternalLB) {
-              addExternalNodesForCluster(ClusterComponentTypes.LoadBalancer, _id, position)
-            }
-            break;
+        if (node.type === 'cloud') {
+          cloudId.value = node.id
+          // Cluster에 연계할 Registry 추가
+          Helper.addExternalNodesForCluster(node.id, ClusterComponentTypes.Registry, node.position)
+          // Cluster에 연계할 External L/B 추가
+          Helper.addExternalNodesForCluster(node.id, ClusterComponentTypes.LoadBalancer, node.position)
         }
       })
     } else {
@@ -274,14 +132,11 @@ const onPropsChanged = (propsData) => {
   const node = store.getNode(propsData.id)
   node.label = propsData.name;
 }
-
 const onEdgeUpdateStart = (edge: Edge) => { }
 const onEdgeUpdateEnd = (edge: Edge) => { }
 const onEdgeUpdate = ({ edge, connection }: FlowEvents['edgeUpdate']) => { updateEdge(edge, connection, [...store.nodes, ...store.edges]) }
-
 // Events
 onConnect((params) => store.addEdges([params]));
-
 onMounted(() => { });
 // Logics (like api call, etc)
 </script>

@@ -4,4 +4,7 @@ export { default as useZoomPanHelper } from './useZoomPanHelper'
 export { default as useWindow } from './useWindow'
 export { default as useVueFlow } from './useVueFlow'
 // MOD: 클라우드 관리용
-export { default as useCloudHelper } from './useCloudHelper'
+export { default as useCloudHandler } from './useCloudHandler'
+export { default as useCAPIHandler } from './useCAPIHandler'
+export { default as useMachineGroupHandler } from './useMachineGroupHandler'
+export { default as useMachineSetHandler } from './useMachineSetHandler'
