@@ -59,4 +59,5 @@ Checkout the [deployment documentation](https://v3.nuxtjs.org/docs/deployment) f
 - https://v3.nuxtjs.org/guide/concepts/introduction
 
 
+
 **--Update Required--**
