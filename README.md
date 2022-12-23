@@ -58,3 +58,17 @@ Checkout the [deployment documentation](https://v3.nuxtjs.org/docs/deployment) f
 
 - https://v3.nuxtjs.org/guide/concepts/introduction
 
+
+## Designer Preview
+
+### Baremetal Cloud
+
+![Baremetal Cloud](./poc_screenshot_baremetal.png)
+
+### Openstack Cloud
+
+![Openstack Cloud](./poc_screenshot_openstack.png)
+
+### Openstack Cluster on Openstack Cloud
+
+![Openstack Cluster](./poc_screenshot_openstack_cluster.png)

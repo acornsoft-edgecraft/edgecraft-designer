@@ -1,5 +1,6 @@
 <template>
   <div class="layout-header flex flex-row p-2">
+    <Logo />
     <ul class="menu hidden lg:flex origin-top">
       <li>
         <button class="p-link button">
@@ -24,6 +25,7 @@
 </template>
 
 <script setup lang="ts">
+import Logo from "./logo.vue";
 /**
  * 여기서는 해당 화면 생성 이전에 처리할 설정을 구성합니다.
  * this 등의 사용이 불가능합니다.
