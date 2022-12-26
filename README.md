@@ -72,3 +72,4 @@ Checkout the [deployment documentation](https://v3.nuxtjs.org/docs/deployment) f
 ### Openstack Cluster on Openstack Cloud
 
 ![Openstack Cluster](./poc_screenshot_openstack_cluster.png)
+
