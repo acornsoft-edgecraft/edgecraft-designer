@@ -48,7 +48,7 @@ Checkout the [deployment documentation](https://v3.nuxtjs.org/docs/deployment) f
 #### Cluster
 
 - NodeCount > 0
-- Master HA 구성 갯수 및 취소 시 초기화
+- Master HA 구성 개수 및 취소 시 초기화
 
 #### Node
 - node
