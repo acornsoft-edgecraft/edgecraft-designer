@@ -54,10 +54,9 @@ Checkout the [deployment documentation](https://v3.nuxtjs.org/docs/deployment) f
 - node
 
 -----
-## Docs
+## Documents
 
-- https://v3.nuxtjs.org/guide/concepts/introduction
-
+See our documentation in the /docs repository, please [find the index here](/docs/README.md).
 
 ## Designer Preview
 
